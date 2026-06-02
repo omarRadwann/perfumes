@@ -89,8 +89,9 @@ export function Sections() {
                   className="card group aspect-[3/4] w-full"
                   aria-label={`Open ${f.name}`}
                 >
+                  {/* f.mood already includes basePath (via withBase in fragrances.ts) */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={withBase(f.mood)} alt={f.name} className="card-img absolute inset-0" />
+                  <img src={f.mood} alt={f.name} className="card-img absolute inset-0" />
                   <div className="absolute inset-0 bg-gradient-to-t from-noir via-noir/40 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-left md:p-5">
                     <span
