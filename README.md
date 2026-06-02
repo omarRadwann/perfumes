@@ -1,113 +1,94 @@
-# Maison Nocté — a fully 3D luxury perfume experience
+# Maison Nocté — a fully 3D perfume gallery
 
-> *Composed for the hours after dark.*
+> *Six compositions, six worlds.*
 
-A WebGL **maison de parfum**: five glass flacons stand on a polished onyx floor in
-real-time 3D. Hover to lift a bottle, click to fly the camera in and reveal its
-note pyramid and story. Built with **Next.js + React Three Fiber**, shipped as a
-fully **static** site (the browser makes zero external calls at runtime).
+A WebGL **maison de parfum** modelled on the reference brief: each fragrance is a
+premium **product** (a glass flacon beside its printed gift carton) shown on a
+marble plinth in its own luminous alcove of a bright, gold-trimmed gallery you
+**scroll** through. Built with **Next.js + React Three Fiber**, shipped fully
+**static** (zero runtime external calls).
 
 **Live:** https://omarradwann.github.io/perfumes/
 
----
+## The reference, implemented
 
-## Why the bottles are crafted in code (not Tripo)
+Based on FHILY's "supermarket product packaging in 3D" build. The five steps:
 
-The brief suggested generating 3D models from images via Tripo's image-to-3D API.
-That rule fits **opaque retail packaging** — the case image-to-3D is good at. But a
-perfume bottle is **transparent glass**: a single photo can't encode refraction,
-index-of-refraction, or the liquid inside, so image-to-3D yields a blobby, opaque
-mesh — the opposite of luxury.
+1. **Six individual 3D scenes**, one per product — `components/scene/Alcove.tsx`.
+2. Each scene an **intimate alcove with its own world** — every niche glows in the
+   scent's accent colour and the follow-spot takes its tint.
+3. **Scroll to move between scenes** — Lenis smooth scroll drives a camera dolly
+   that rests framed on the active product (`GalleryCamera.tsx`, `Experience.tsx`).
+4. **Hidden gestures** — double-click a flacon to make it rise & glow; the Konami
+   code reveals the active one.
+5. **A soundscape per scene** — a procedural Web-Audio ambient pad that shifts tone
+   per alcove (`lib/soundscape.ts`), toggled from the nav.
 
-So the flacons are crafted in real WebGL (lathe geometry + physically-based glass
-with true transmission + an in-scene HDRI built from lightformers). The Tripo
-pipeline is still included (`scripts/generate-models.js`) and documented below, but
-the shipped site never calls it.
+Plus GSAP-style product rotation/hover and a bright luxury aesthetic (cream marble,
+champagne gold, soft museum light).
 
-## Tech stack
+## On the 3D models
 
-- **Next.js 16** (App Router, TypeScript, static export)
-- **React Three Fiber** + **drei** + **@react-three/postprocessing** (Three.js)
-- **GSAP** (detail-panel choreography), **zustand** (scene ⇆ DOM state)
-- **Tailwind CSS v4**, Cormorant Garamond + Jost typography
-- Imagery generated with AI; optimized with **sharp**
+The reference modelled packaging in Blender → GLTF. With no Blender and no Tripo
+API key available, the gallery, plinths and products are built **in code** (R3F
+geometry) and wrapped in **AI-generated luxury packaging artwork** (the cartons),
+which nails the "premium product" look with zero external dependencies. An optional
+Tripo image-to-3D pipeline is still included (`scripts/generate-models.js`) per the
+original brief, unused at runtime.
 
-## Getting started
+## Tech
+
+Next.js 16 (App Router, TS, static export) · React Three Fiber + drei +
+@react-three/postprocessing · GSAP · Lenis · zustand · Tailwind v4 · Cormorant
+Garamond + Jost. Imagery AI-generated, optimized with sharp.
+
+## Run
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
+npm run dev            # http://localhost:3000
 ```
 
-## Build & deploy (GitHub Pages)
+## Build & deploy (GitHub Pages, gh-pages branch)
 
 ```bash
-# local production build → ./out  (root basePath, for `npm run preview`)
-npm run build
-
-# build under the /perfumes subpath (what gets published to Pages)
-GITHUB_PAGES=true npm run build
-```
-
-This repo is published to the `gh-pages` branch (Pages → Source: *Deploy from a
-branch* → `gh-pages` / root). To redeploy:
-
-```bash
-GITHUB_PAGES=true npm run build
-echo "" > out/.nojekyll                      # keep /_next/* from being stripped
+GITHUB_PAGES=true npm run build          # → ./out, basePath /perfumes
+echo "" > out/.nojekyll
 cd out && git init -b gh-pages && git add -A && git commit -m deploy \
   && git push -f https://github.com/omarRadwann/perfumes.git HEAD:gh-pages
 ```
 
-> A ready-made GitHub Actions workflow lives at `docs/deploy.workflow.yml`. To use
-> Actions-based auto-deploy instead, copy it to `.github/workflows/deploy.yml`
-> (requires a token with the `workflow` scope) and set Pages → Source: *GitHub
-> Actions*.
+Pages → Source: *Deploy from a branch* → `gh-pages` / root. (A ready-made GitHub
+Actions workflow is kept at `docs/deploy.workflow.yml`; using it needs a token with
+the `workflow` scope.)
 
 ## Image pipeline
 
-All art lives in `public/img/`. The originals were AI-generated, then optimized:
-
 ```bash
-node scripts/optimize-images.mjs   # resize + re-encode (JPEG/PNG) for the web
+node scripts/optimize-images.mjs    # resize + re-encode public/img for the web
 ```
 
-Bottle labels are **not** images — they're drawn procedurally to a canvas texture
-(`lib/labelTexture.ts`) for perfect alpha and crisp type at any resolution.
+`public/img/`: `box-<id>.jpg` (six AI carton artworks), `marble.jpg`, `wall.jpg`,
+`hero.jpg` (boutique still for OG / mobile), `crest.png` (logo), `og.jpg`.
 
-## Optional — Tripo image-to-3D (`npm run models`)
-
-Provided per the brief; **not used by the site**. To experiment (e.g. for opaque
-packaging props):
-
-1. `cp .env.example .env` and set `TRIPO_API_KEY` (https://platform.tripo3d.ai)
-2. Put product images in `assets/source-images/`
-3. `npm run models` → textured GLBs download to `public/models/` (existing ones are
-   skipped, so re-runs don't spend credits)
-
-The key is read server-side only and is git-ignored. No browser code references it.
-
-## Project structure
+## Structure
 
 ```
-app/                  layout (fonts, metadata) + page
 components/
-  Experience.tsx      orchestrates canvas + DOM, scroll-lock, render gating
-  SceneMount.tsx      ssr:false dynamic import of the canvas
-  scene/              SceneCanvas, Shelf, Bottle, CameraRig, StudioEnvironment
-  ui/                 Nav, Hero, DetailPanel, Sections, Cursor, Loader
-lib/                  fragrances (data), store, deviceTier, basePath, labelTexture
-scripts/              optimize-images.mjs, generate-models.js (optional Tripo)
-public/img/           AI-generated, optimized art
+  Experience.tsx        Lenis scroll journey, soundscape, hidden gestures, mounts canvas + overlay
+  SceneMount.tsx        ssr:false canvas, or StaticFallback (reduced-motion / small phones)
+  scene/                SceneCanvas, Gallery, Alcove, Product, GalleryCamera, StudioEnvironment
+  ui/                   Nav, SceneOverlay (per-scene info + rail + intro), Cursor, Loader, StaticFallback
+lib/                    fragrances (6 products + palette + packaging), store (scroll/active), soundscape,
+                        deviceTier (GPU tiers), basePath
+scripts/                optimize-images.mjs, serve-out.mjs, generate-models.js (optional Tripo)
 ```
 
 ## Performance
 
-The scene runs the same composition on every device but scales cost by GPU tier
-(`lib/deviceTier.ts`): real glass **transmission** + a mirror floor on discrete
-GPUs; tinted fake-glass + contact shadows on integrated GPUs; a reduced-motion /
-small-mobile path drops effects. DPR is clamped per tier and never below 1.0.
-Append `?tier=high|standard|safe` to the URL to pin a tier.
+Same composition on every device; cost scales by GPU tier (`lib/deviceTier.ts`) —
+real glass transmission + bloom on discrete GPUs, opacity-glass on integrated, a
+reduced-motion / small-phone static fallback. Append `?tier=high|standard|safe`.
 
 ---
 
