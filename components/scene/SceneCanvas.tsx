@@ -16,20 +16,18 @@ import {
 } from "@/lib/deviceTier";
 import { useScene } from "@/lib/store";
 import { StudioEnvironment } from "./StudioEnvironment";
-import { Shelf } from "./Shelf";
-import { CameraRig } from "./CameraRig";
+import { Gallery } from "./Gallery";
+import { GalleryCamera } from "./GalleryCamera";
 
 function Effects({ tier, integrated }: { tier: QualityTier; integrated: boolean }) {
   const bloom = tier !== "safe" && !integrated;
-  // Build the pass list as an array so conditional inclusion typechecks (a
-  // `false` child is not assignable to EffectComposer's element children).
   const passes = [<SMAA key="smaa" />];
   if (bloom) {
     passes.push(
-      <Bloom key="bloom" mipmapBlur intensity={0.72} luminanceThreshold={0.62} luminanceSmoothing={0.3} />
+      <Bloom key="bloom" mipmapBlur intensity={0.26} luminanceThreshold={0.9} luminanceSmoothing={0.2} />
     );
   }
-  passes.push(<Vignette key="vignette" offset={0.26} darkness={0.82} />);
+  passes.push(<Vignette key="vignette" offset={0.3} darkness={0.5} />);
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
       {passes}
@@ -44,7 +42,6 @@ export default function SceneCanvas() {
   const forced = useRef<QualityTier | null>(null);
   const integrated = useRef(false);
 
-  // Boot tier from synchronous signals (refined by the GPU read in onCreated).
   useEffect(() => {
     forced.current = readForcedTier();
     setTier(forced.current ?? initialTier());
@@ -60,13 +57,8 @@ export default function SceneCanvas() {
     <Canvas
       frameloop="always"
       dpr={clampDpr(tier, integrated.current)}
-      camera={{ position: [0, 1.45, 8.9], fov: 38, near: 0.1, far: 60 }}
-      gl={{
-        antialias: true,
-        alpha: false,
-        powerPreference: "high-performance",
-        toneMapping: THREE.ACESFilmicToneMapping,
-      }}
+      camera={{ position: [0, 1.6, 4.9], fov: 42, near: 0.1, far: 120 }}
+      gl={{ antialias: true, alpha: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
       onCreated={({ gl, scene }) => {
         const renderer = readGpuRenderer(gl.getContext());
         integrated.current = isIntegratedGpu(renderer);
@@ -74,23 +66,23 @@ export default function SceneCanvas() {
           const t = tierFromGpu(renderer);
           if (t) setTier(t);
         }
-        gl.toneMappingExposure = 1.15;
+        gl.toneMappingExposure = 0.82;
         gl.setPixelRatio(clampDpr(useScene.getState().tier, integrated.current));
-        scene.background = new THREE.Color("#0a0908");
+        scene.background = new THREE.Color("#efe7d8");
         setReady(true);
       }}
     >
-      <color attach="background" args={["#0a0908"]} />
-      <fog attach="fog" args={["#0a0908", 12, 26]} />
+      <color attach="background" args={["#efe7d8"]} />
+      <fog attach="fog" args={["#efe7d8", 12, 60]} />
 
       <PerformanceMonitor flipflops={4} onDecline={stepDown} />
 
       <Suspense fallback={null}>
         <StudioEnvironment tier={tier} />
-        <Shelf tier={tier} />
+        <Gallery tier={tier} />
       </Suspense>
 
-      <CameraRig />
+      <GalleryCamera />
       <Effects tier={tier} integrated={integrated.current} />
     </Canvas>
   );

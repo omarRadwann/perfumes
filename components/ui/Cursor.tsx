@@ -3,12 +3,12 @@
 import { useEffect, useRef } from "react";
 import { useScene } from "@/lib/store";
 
-// A fine champagne ring + dot cursor that trails the pointer and swells over the
-// flacons / interactive elements. Desktop (fine pointer) only.
+// Fine champagne ring + dot cursor that trails the pointer and swells over the
+// active product. Desktop (fine pointer) only.
 export function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
-  const hovered = useScene((s) => s.hoveredId);
+  const hovered = useScene((s) => s.hovered);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

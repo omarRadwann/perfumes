@@ -1,34 +1,49 @@
 import { create } from "zustand";
 import type { QualityTier } from "./deviceTier";
+import { FRAGRANCES } from "./fragrances";
 
-// Shared state across the React-DOM ⇆ R3F-canvas reconciler boundary. A zustand
-// store works in both trees (it's an external subscription), so the DOM overlay
-// (DetailPanel, hero copy) and the in-canvas scene stay in lock-step without
-// bridging React context through the Canvas.
+const COUNT = FRAGRANCES.length;
+
+// Shared state across the React-DOM ⇆ R3F-canvas boundary (zustand works in both).
 interface SceneState {
-  hoveredId: string | null;
-  selectedId: string | null;
+  /** journey progress 0..1, driven by scroll */
+  scroll: number;
+  /** active alcove index (0..COUNT-1) */
+  active: number;
+  /** pointer is over the active product */
+  hovered: boolean;
+  /** index of a product whose carton is "opened" (hidden gesture), else null */
+  opened: number | null;
   tier: QualityTier;
-  /** true once the first frame + assets are ready (drops the loader veil) */
   ready: boolean;
-  /** hero in view — drives the render loop so we don't burn GPU when scrolled away */
-  active: boolean;
-  setHovered: (id: string | null) => void;
-  setSelected: (id: string | null) => void;
+  /** ambient soundscape enabled (after first user gesture) */
+  sound: boolean;
+  setScroll: (s: number) => void;
+  setHovered: (h: boolean) => void;
+  setOpened: (i: number | null) => void;
   setTier: (t: QualityTier) => void;
   setReady: (r: boolean) => void;
-  setActive: (a: boolean) => void;
+  setSound: (s: boolean) => void;
+  goto: (i: number) => void;
 }
 
 export const useScene = create<SceneState>((set) => ({
-  hoveredId: null,
-  selectedId: null,
+  scroll: 0,
+  active: 0,
+  hovered: false,
+  opened: null,
   tier: "standard",
   ready: false,
-  active: true,
-  setHovered: (id) => set({ hoveredId: id }),
-  setSelected: (id) => set({ selectedId: id }),
+  sound: false,
+  setScroll: (s) =>
+    set({ scroll: s, active: Math.max(0, Math.min(COUNT - 1, Math.round(s * (COUNT - 1)))) }),
+  setHovered: (h) => set({ hovered: h }),
+  setOpened: (i) => set({ opened: i }),
   setTier: (t) => set({ tier: t }),
   setReady: (r) => set({ ready: r }),
-  setActive: (a) => set({ active: a }),
+  setSound: (s) => set({ sound: s }),
+  // Smooth-scroll to a station: handled in the DOM (Lenis); here we just set state.
+  goto: (i) => set({ scroll: i / (COUNT - 1), active: i }),
 }));
+
+export const STATION_COUNT = COUNT;

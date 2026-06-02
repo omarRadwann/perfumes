@@ -4,15 +4,12 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { StaticFallback } from "./ui/StaticFallback";
 
-// R3F must never SSR (it needs the DOM/WebGL). This client wrapper does the
-// ssr:false dynamic import — Server Components cannot pass ssr:false themselves.
 const SceneCanvas = dynamic(() => import("@/components/scene/SceneCanvas"), {
   ssr: false,
-  loading: () => <div className="h-full w-full bg-noir" />,
+  loading: () => <div className="h-full w-full bg-cream" />,
 });
 
 export default function SceneMount() {
-  // Decide WebGL vs. static after mount (client-only — avoids hydration mismatch).
   const [mode, setMode] = useState<"canvas" | "static" | null>(null);
 
   useEffect(() => {
@@ -21,8 +18,6 @@ export default function SceneMount() {
     setMode(reduce || tinyPhone ? "static" : "canvas");
   }, []);
 
-  // When the Canvas mounts post-layout via a dynamic import, R3F can occasionally
-  // miss its first size measurement and stay at 300×150. Nudge resize events.
   useEffect(() => {
     if (mode !== "canvas") return;
     const raf = requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
@@ -35,7 +30,7 @@ export default function SceneMount() {
     };
   }, [mode]);
 
-  if (mode === null) return <div className="h-full w-full bg-noir" />;
+  if (mode === null) return <div className="h-full w-full bg-cream" />;
   if (mode === "static") return <StaticFallback />;
   return <SceneCanvas />;
 }

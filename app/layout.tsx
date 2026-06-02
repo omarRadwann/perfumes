@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://omarradwann.github.io/perfumes/"),
   title: "Maison Nocté — Parfums de Nuit",
   description:
-    "Maison Nocté — five extrait de parfum compositions for the hours after dark. A nocturnal house of oud, amber, rose and iris, rendered in light and glass.",
+    "Maison Nocté — a fully 3D perfumery. Six extrait de parfum compositions, each presented as a premium product in its own luminous alcove of a marble-and-gold gallery you scroll through.",
   keywords: [
     "luxury perfume",
     "extrait de parfum",
