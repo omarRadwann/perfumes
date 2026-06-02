@@ -8,19 +8,21 @@ import type { Fragrance } from "@/lib/fragrances";
 import type { QualityTier } from "@/lib/deviceTier";
 import { prefersReducedMotion } from "@/lib/motion";
 
-// One station of the gallery: a marble plinth, the product (carton + flacon), and
-// a framed niche behind it that glows in the scent's own accent — giving each
-// alcove "its own world" without a per-alcove light (the glow is emissive).
+// One station of the gallery: a dark-marble plinth banded in gold, the product
+// (carton + flacon), and a framed niche behind it that glows in the scent's own
+// accent — giving each alcove "its own world" without a per-alcove light.
 interface Props {
   fragrance: Fragrance;
   index: number;
   z: number;
   active: boolean;
   tier: QualityTier;
-  marble?: THREE.Texture | null;
+  plinthTex?: THREE.Texture | null;
 }
 
-export function Alcove({ fragrance, index, z, active, tier, marble }: Props) {
+const GOLD = "#c9a96a";
+
+export function Alcove({ fragrance, index, z, active, tier, plinthTex }: Props) {
   const p = fragrance.palette;
   const panelMat = useRef<THREE.MeshStandardMaterial>(null);
   const reduce = useRef(false);
@@ -31,44 +33,66 @@ export function Alcove({ fragrance, index, z, active, tier, marble }: Props) {
     const m = panelMat.current;
     if (!m) return;
     if (active && !reduce.current) {
-      m.emissiveIntensity = 0.2 + Math.sin(state.clock.elapsedTime * 1.2 + index) * 0.06; // breathing
+      m.emissiveIntensity = 0.24 + Math.sin(state.clock.elapsedTime * 1.2 + index) * 0.07; // breathing
     } else {
       const k = 1 - Math.pow(0.02, dt);
-      m.emissiveIntensity += ((active ? 0.22 : 0.12) - m.emissiveIntensity) * k;
+      m.emissiveIntensity += ((active ? 0.26 : 0.1) - m.emissiveIntensity) * k;
     }
   });
+
+  const stone = (
+    <meshStandardMaterial
+      map={plinthTex ?? undefined}
+      color={plinthTex ? "#d4cabb" : "#3a3631"}
+      roughness={0.34}
+      metalness={0.28}
+      envMapIntensity={0.7}
+    />
+  );
+
   return (
     <group position={[0, 0, z]}>
-      {/* framed niche backdrop, gold frame + accent-glowing panel */}
-      <mesh position={[0, 2.0, -1.7]}>
-        <boxGeometry args={[3.0, 3.9, 0.12]} />
-        <meshStandardMaterial color={p.accent} metalness={0.85} roughness={0.3} emissive={p.accent} emissiveIntensity={0.15} />
+      {/* framed niche backdrop — gold frame, inner liner, accent-glowing panel */}
+      <mesh position={[0, 2.05, -1.75]}>
+        <boxGeometry args={[3.1, 4.0, 0.12]} />
+        <meshStandardMaterial color={GOLD} metalness={0.88} roughness={0.28} emissive={p.accent} emissiveIntensity={0.12} envMapIntensity={1.1} />
       </mesh>
-      <mesh position={[0, 2.0, -1.6]}>
-        <boxGeometry args={[2.7, 3.6, 0.14]} />
+      <mesh position={[0, 2.05, -1.69]}>
+        <boxGeometry args={[2.86, 3.76, 0.1]} />
+        <meshStandardMaterial color={"#1b1916"} metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 2.05, -1.64]}>
+        <boxGeometry args={[2.66, 3.56, 0.12]} />
         <meshStandardMaterial
           ref={panelMat}
           color={"#efe7d8"}
           roughness={0.85}
           metalness={0}
           emissive={p.accent}
-          emissiveIntensity={active ? 0.22 : 0.12}
+          emissiveIntensity={active ? 0.26 : 0.1}
         />
       </mesh>
 
-      {/* marble plinth */}
-      <mesh position={[0, 0.55, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.62, 0.7, 1.1, 48]} />
-        <meshStandardMaterial map={marble ?? undefined} color={marble ? "#ffffff" : "#e9e0cf"} roughness={0.35} metalness={0.15} envMapIntensity={0.6} />
+      {/* dark-marble plinth, banded in gold */}
+      <mesh position={[0, 0.09, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.86, 0.94, 0.18, 56]} />
+        {stone}
       </mesh>
-      {/* thin gold inlay line on the plinth top edge */}
-      <mesh position={[0, 1.105, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.55, 0.62, 48]} />
-        <meshStandardMaterial color={"#c9a96a"} metalness={0.9} roughness={0.25} side={THREE.DoubleSide} />
+      <mesh position={[0, 0.21, 0]}>
+        <cylinderGeometry args={[0.8, 0.82, 0.05, 56]} />
+        <meshStandardMaterial color={GOLD} metalness={0.9} roughness={0.26} envMapIntensity={1.2} />
+      </mesh>
+      <mesh position={[0, 0.65, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.6, 0.66, 0.84, 56]} />
+        {stone}
+      </mesh>
+      <mesh position={[0, 1.09, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.66, 0.62, 0.06, 56]} />
+        <meshStandardMaterial color={GOLD} metalness={0.9} roughness={0.24} envMapIntensity={1.2} />
       </mesh>
 
-      {/* the product, on the plinth top (y = 1.1) */}
-      <group position={[0, 1.1, 0]}>
+      {/* the product, on the plinth top (y = 1.12) */}
+      <group position={[0, 1.12, 0]}>
         <Product fragrance={fragrance} index={index} active={active} tier={tier} />
       </group>
     </group>

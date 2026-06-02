@@ -4,7 +4,7 @@ import * as THREE from "three";
 import gsap from "gsap";
 import { useMemo, useRef, useEffect } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
+import { useTexture, RoundedBox } from "@react-three/drei";
 import type { Fragrance } from "@/lib/fragrances";
 import type { QualityTier } from "@/lib/deviceTier";
 import { useScene } from "@/lib/store";
@@ -12,12 +12,13 @@ import { prefersReducedMotion } from "@/lib/motion";
 
 const v2 = (x: number, y: number) => new THREE.Vector2(x, y);
 
+// A more substantial flacon: flat heavy base, clean shoulder, slim neck + lip.
 const BODY = [
-  v2(0.0, 0.0), v2(0.3, 0.0), v2(0.33, 0.03), v2(0.33, 0.5), v2(0.3, 0.62),
-  v2(0.19, 0.72), v2(0.105, 0.8), v2(0.1, 0.92), v2(0.12, 0.94),
+  v2(0.0, 0.0), v2(0.34, 0.0), v2(0.37, 0.03), v2(0.37, 0.44), v2(0.35, 0.54),
+  v2(0.22, 0.67), v2(0.12, 0.77), v2(0.115, 0.9), v2(0.14, 0.94), v2(0.14, 0.96),
 ];
 const LIQUID = [
-  v2(0.0, 0.03), v2(0.28, 0.03), v2(0.3, 0.08), v2(0.3, 0.5), v2(0.26, 0.6), v2(0.16, 0.68), v2(0.0, 0.7),
+  v2(0.0, 0.04), v2(0.32, 0.04), v2(0.34, 0.08), v2(0.34, 0.42), v2(0.31, 0.5), v2(0.2, 0.6), v2(0.0, 0.63),
 ];
 
 interface Props {
@@ -40,7 +41,7 @@ export default function Product({ fragrance, index, active, tier }: Props) {
   const setHovered = useScene((s) => s.setHovered);
   const setOpened = useScene((s) => s.setOpened);
 
-  const segments = tier === "high" ? 56 : tier === "standard" ? 36 : 24;
+  const segments = tier === "high" ? 64 : tier === "standard" ? 40 : 24;
   const transmissive = tier !== "safe";
 
   const packaging = useTexture(fragrance.packaging);
@@ -149,16 +150,20 @@ export default function Product({ fragrance, index, active, tier }: Props) {
   return (
     <group ref={tilt} onPointerOver={over} onPointerOut={out} onDoubleClick={dbl} data-product>
       <group ref={spin}>
-        {/* premium carton */}
-        <mesh position={[0, 0.72, -0.06]} castShadow>
-          <boxGeometry args={[1.0, 1.42, 0.5]} />
-          <meshStandardMaterial attach="material-0" color={p.box} roughness={0.7} metalness={0.05} />
-          <meshStandardMaterial attach="material-1" color={p.box} roughness={0.7} metalness={0.05} />
-          <meshStandardMaterial attach="material-2" color={p.box} roughness={0.6} metalness={0.1} />
-          <meshStandardMaterial attach="material-3" color={p.box} roughness={0.7} metalness={0.05} />
-          <meshStandardMaterial attach="material-4" map={packaging} roughness={0.45} metalness={0.12} envMapIntensity={0.7} />
-          <meshStandardMaterial attach="material-5" map={packaging} roughness={0.45} metalness={0.12} envMapIntensity={0.7} />
-        </mesh>
+        {/* premium carton: bevelled body + printed sleeve front & back, soft foil sheen */}
+        <group position={[0, 0.72, -0.06]}>
+          <RoundedBox args={[1.0, 1.42, 0.5]} radius={0.05} smoothness={5} castShadow receiveShadow>
+            <meshPhysicalMaterial color={p.box} roughness={0.5} metalness={0.15} clearcoat={0.5} clearcoatRoughness={0.35} envMapIntensity={0.8} />
+          </RoundedBox>
+          <mesh position={[0, 0, 0.252]}>
+            <planeGeometry args={[0.9, 1.3]} />
+            <meshStandardMaterial map={packaging} roughness={0.42} metalness={0.18} envMapIntensity={0.9} />
+          </mesh>
+          <mesh position={[0, 0, -0.252]} rotation={[0, Math.PI, 0]}>
+            <planeGeometry args={[0.9, 1.3]} />
+            <meshStandardMaterial map={packaging} roughness={0.42} metalness={0.18} envMapIntensity={0.9} />
+          </mesh>
+        </group>
 
         {/* glass flacon in front */}
         <group ref={bottle} position={[0, 0.42, 0.5]} scale={[1, 1, 0.74]}>
@@ -167,16 +172,17 @@ export default function Product({ fragrance, index, active, tier }: Props) {
             {transmissive ? (
               <meshPhysicalMaterial
                 transmission={1}
-                thickness={0.45}
-                roughness={tier === "high" ? 0.05 : 0.09}
+                thickness={0.6}
+                roughness={tier === "high" ? 0.04 : 0.08}
                 ior={1.5}
                 metalness={0}
                 clearcoat={1}
-                clearcoatRoughness={0.2}
+                clearcoatRoughness={0.12}
+                specularIntensity={1}
                 color={"#ffffff"}
                 attenuationColor={p.liquid}
-                attenuationDistance={0.5}
-                envMapIntensity={1.3}
+                attenuationDistance={0.45}
+                envMapIntensity={1.4}
               />
             ) : (
               <meshPhysicalMaterial transparent opacity={0.4} roughness={0.12} ior={1.45} metalness={0} color={"#f2eee6"} envMapIntensity={1.5} />
@@ -189,7 +195,7 @@ export default function Product({ fragrance, index, active, tier }: Props) {
               color={p.liquid}
               emissive={p.liquid}
               emissiveIntensity={0.03}
-              roughness={0.3}
+              roughness={0.28}
               metalness={0}
               transmission={transmissive ? 0.2 : 0}
               transparent={!transmissive}
@@ -197,14 +203,15 @@ export default function Product({ fragrance, index, active, tier }: Props) {
               ior={1.33}
             />
           </mesh>
-          <mesh position={[0, 0.99, 0]} castShadow>
-            <cylinderGeometry args={[0.12, 0.115, 0.16, 32]} />
-            <meshStandardMaterial color={p.cap} metalness={0.95} roughness={0.18} envMapIntensity={1.3} />
+          {/* gold collar */}
+          <mesh position={[0, 0.95, 0]} castShadow>
+            <cylinderGeometry args={[0.145, 0.135, 0.07, 40]} />
+            <meshStandardMaterial color={p.cap} metalness={0.96} roughness={0.16} envMapIntensity={1.4} />
           </mesh>
-          <mesh position={[0, 1.12, 0]} castShadow>
-            <sphereGeometry args={[0.13, 32, 24]} />
-            <meshStandardMaterial color={p.cap} metalness={0.95} roughness={0.16} envMapIntensity={1.4} />
-          </mesh>
+          {/* faceted gold stopper */}
+          <RoundedBox args={[0.24, 0.2, 0.24]} radius={0.04} smoothness={4} position={[0, 1.08, 0]} castShadow>
+            <meshStandardMaterial color={p.cap} metalness={0.96} roughness={0.14} envMapIntensity={1.5} />
+          </RoundedBox>
         </group>
       </group>
     </group>

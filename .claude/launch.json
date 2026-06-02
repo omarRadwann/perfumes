@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "perfumes-out",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-out.mjs"],
+      "port": 4321
     }
   ]
 }

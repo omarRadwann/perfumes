@@ -35,15 +35,15 @@ function Effects({ tier, integrated }: { tier: QualityTier; integrated: boolean 
   const passes = [<SMAA key="smaa" />];
   if (bloom) {
     passes.push(
-      <Bloom key="bloom" mipmapBlur intensity={0.26} luminanceThreshold={0.9} luminanceSmoothing={0.2} />
+      <Bloom key="bloom" mipmapBlur intensity={0.34} luminanceThreshold={0.82} luminanceSmoothing={0.25} />
     );
   }
   if (dof) {
     passes.push(
-      <DepthOfField key="dof" target={focus.current} focalLength={0.028} bokehScale={1.5} height={480} />
+      <DepthOfField key="dof" target={focus.current} focalLength={0.026} bokehScale={1.7} height={480} />
     );
   }
-  passes.push(<Vignette key="vignette" offset={0.3} darkness={0.5} />);
+  passes.push(<Vignette key="vignette" offset={0.28} darkness={0.6} />);
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
       {passes}
@@ -72,10 +72,12 @@ export default function SceneCanvas() {
   return (
     <Canvas
       frameloop="always"
+      shadows
       dpr={clampDpr(tier, integrated.current)}
       camera={{ position: [0, 1.6, 4.9], fov: 42, near: 0.1, far: 120 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
       onCreated={({ gl, scene }) => {
+        gl.shadowMap.type = THREE.PCFSoftShadowMap;
         const renderer = readGpuRenderer(gl.getContext());
         integrated.current = isIntegratedGpu(renderer);
         if (!forced.current) {
