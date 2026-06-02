@@ -2,9 +2,9 @@
 
 import * as THREE from "three";
 import { Suspense, useEffect, useRef } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
-import { EffectComposer, Bloom, Vignette, SMAA } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Vignette, SMAA, DepthOfField } from "@react-three/postprocessing";
 import {
   initialTier,
   readForcedTier,
@@ -16,15 +16,31 @@ import {
 } from "@/lib/deviceTier";
 import { useScene } from "@/lib/store";
 import { StudioEnvironment } from "./StudioEnvironment";
-import { Gallery } from "./Gallery";
+import { Gallery, STATION_GAP } from "./Gallery";
 import { GalleryCamera } from "./GalleryCamera";
 
 function Effects({ tier, integrated }: { tier: QualityTier; integrated: boolean }) {
   const bloom = tier !== "safe" && !integrated;
+  const dof = tier === "high" || (tier === "standard" && !integrated);
+
+  // Auto-focus the active product so only the far hall blurs softly (subtle).
+  const focus = useRef(new THREE.Vector3(0, 1.7, 0.3));
+  useFrame((_, dt) => {
+    if (!dof) return;
+    const a = useScene.getState().active;
+    const k = 1 - Math.pow(0.002, dt);
+    focus.current.z += (-a * STATION_GAP + 0.3 - focus.current.z) * k;
+  });
+
   const passes = [<SMAA key="smaa" />];
   if (bloom) {
     passes.push(
       <Bloom key="bloom" mipmapBlur intensity={0.26} luminanceThreshold={0.9} luminanceSmoothing={0.2} />
+    );
+  }
+  if (dof) {
+    passes.push(
+      <DepthOfField key="dof" target={focus.current} focalLength={0.028} bokehScale={1.5} height={480} />
     );
   }
   passes.push(<Vignette key="vignette" offset={0.3} darkness={0.5} />);

@@ -1,9 +1,12 @@
 "use client";
 
 import * as THREE from "three";
+import { useRef, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
 import Product from "./Product";
 import type { Fragrance } from "@/lib/fragrances";
 import type { QualityTier } from "@/lib/deviceTier";
+import { prefersReducedMotion } from "@/lib/motion";
 
 // One station of the gallery: a marble plinth, the product (carton + flacon), and
 // a framed niche behind it that glows in the scent's own accent — giving each
@@ -19,6 +22,21 @@ interface Props {
 
 export function Alcove({ fragrance, index, z, active, tier, marble }: Props) {
   const p = fragrance.palette;
+  const panelMat = useRef<THREE.MeshStandardMaterial>(null);
+  const reduce = useRef(false);
+  useEffect(() => {
+    reduce.current = prefersReducedMotion();
+  }, []);
+  useFrame((state, dt) => {
+    const m = panelMat.current;
+    if (!m) return;
+    if (active && !reduce.current) {
+      m.emissiveIntensity = 0.2 + Math.sin(state.clock.elapsedTime * 1.2 + index) * 0.06; // breathing
+    } else {
+      const k = 1 - Math.pow(0.02, dt);
+      m.emissiveIntensity += ((active ? 0.22 : 0.12) - m.emissiveIntensity) * k;
+    }
+  });
   return (
     <group position={[0, 0, z]}>
       {/* framed niche backdrop, gold frame + accent-glowing panel */}
@@ -29,6 +47,7 @@ export function Alcove({ fragrance, index, z, active, tier, marble }: Props) {
       <mesh position={[0, 2.0, -1.6]}>
         <boxGeometry args={[2.7, 3.6, 0.14]} />
         <meshStandardMaterial
+          ref={panelMat}
           color={"#efe7d8"}
           roughness={0.85}
           metalness={0}

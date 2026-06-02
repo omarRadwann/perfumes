@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
+import { useTexture, Sparkles } from "@react-three/drei";
 import { FRAGRANCES } from "@/lib/fragrances";
 import type { QualityTier } from "@/lib/deviceTier";
 import { useScene } from "@/lib/store";
@@ -46,7 +46,7 @@ export function Gallery({ tier }: { tier: QualityTier }) {
   const sx = useRef(0);
   const col = useMemo(() => new THREE.Color("#fff3df"), []);
 
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
     const k = 1 - Math.pow(0.0025, dt);
     const a = useScene.getState().active;
     const tz = stationZ(a);
@@ -57,6 +57,9 @@ export function Gallery({ tier }: { tier: QualityTier }) {
       target.updateMatrixWorld();
       col.lerp(new THREE.Color(FRAGRANCES[a].palette.light), k);
       spot.current.color.copy(col);
+      // candle-like flicker
+      const t = state.clock.elapsedTime;
+      spot.current.intensity = 34 * (1 + Math.sin(t * 8.3) * 0.03 + Math.sin(t * 19.7) * 0.018);
     }
   });
 
@@ -71,6 +74,20 @@ export function Gallery({ tier }: { tier: QualityTier }) {
       <directionalLight position={[-6, 6, -4]} intensity={0.16} color="#eef0ff" />
       <primitive object={target} />
       <spotLight ref={spot} angle={0.5} penumbra={1} distance={24} intensity={34} color="#fff3df" target={target} />
+
+      {/* drifting dust motes catching the light */}
+      {tier !== "safe" && (
+        <Sparkles
+          count={tier === "high" ? 70 : 40}
+          scale={[10, 6, len]}
+          position={[0, 3, -STATION_GAP * 2]}
+          size={3}
+          speed={0.25}
+          opacity={0.5}
+          color="#ffe9c8"
+          noise={1}
+        />
+      )}
 
       {/* marble floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -STATION_GAP * 2]} receiveShadow>
