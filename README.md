@@ -42,15 +42,27 @@ npm run dev          # http://localhost:3000
 ## Build & deploy (GitHub Pages)
 
 ```bash
-# local production build → ./out
+# local production build → ./out  (root basePath, for `npm run preview`)
 npm run build
 
-# build under the /perfumes subpath (what CI uses for Pages)
+# build under the /perfumes subpath (what gets published to Pages)
 GITHUB_PAGES=true npm run build
 ```
 
-Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds with
-`GITHUB_PAGES=true`, writes `out/.nojekyll`, and publishes `out/` to GitHub Pages.
+This repo is published to the `gh-pages` branch (Pages → Source: *Deploy from a
+branch* → `gh-pages` / root). To redeploy:
+
+```bash
+GITHUB_PAGES=true npm run build
+echo "" > out/.nojekyll                      # keep /_next/* from being stripped
+cd out && git init -b gh-pages && git add -A && git commit -m deploy \
+  && git push -f https://github.com/omarRadwann/perfumes.git HEAD:gh-pages
+```
+
+> A ready-made GitHub Actions workflow lives at `docs/deploy.workflow.yml`. To use
+> Actions-based auto-deploy instead, copy it to `.github/workflows/deploy.yml`
+> (requires a token with the `workflow` scope) and set Pages → Source: *GitHub
+> Actions*.
 
 ## Image pipeline
 
