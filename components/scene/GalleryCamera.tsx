@@ -21,8 +21,7 @@ const FOV_FAR = 46; // slightly wider while flying between (subtle, smooth)
 const EYE_Y = 1.6;
 const LOOK_Y = 1.5;
 const LOOK_X = -0.04;
-const CAM_X_PRODUCT = -1.05; // 3/4 framing at the product
-const CAM_X_TRAVEL = -0.12; // near-centred flying down the corridor
+const CAM_X_PRODUCT = -1.05; // initial framing seed
 
 export function GalleryCamera() {
   const { camera, pointer } = useThree();
@@ -67,7 +66,11 @@ export function GalleryCamera() {
     const camDist = OFFSET + (1 - closeness) * PULL;
     const fov = FOV_NEAR + (1 - closeness) * (FOV_FAR - FOV_NEAR);
     const lift = (1 - closeness) * LIFT;
-    const camX = CAM_X_TRAVEL + (CAM_X_PRODUCT - CAM_X_TRAVEL) * closeness;
+    // weave: view each flacon from an ALTERNATING 3/4 side, passing through centre between
+    const sideA = seg % 2 === 0 ? -1 : 1;
+    const sideB = (seg + 1) % 2 === 0 ? -1 : 1;
+    const productSide = f < 0.5 ? sideA : sideB;
+    const camX = productSide * 1.15 * closeness;
 
     close.current += ((opened != null ? 0.8 : 0) - close.current) * k;
     px.current += (pointer.x - px.current) * k;
@@ -95,6 +98,7 @@ export function GalleryCamera() {
     look.current.y += (LOOK_Y + (1 - closeness) * 0.25 - look.current.y) * k;
     look.current.z += (focusZ - lookAhead - look.current.z) * k;
     camera.lookAt(look.current);
+    camera.rotateZ(-productSide * closeness * 0.02); // subtle cinematic bank into the weave
   });
 
   return null;

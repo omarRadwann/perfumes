@@ -55,6 +55,23 @@ export function Gallery({ tier }: { tier: QualityTier }) {
     return t;
   }, [wall]);
 
+  // soft light-shaft texture (horizontal gradient → a feathered vertical beam)
+  const beamTex = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 8;
+    const ctx = c.getContext("2d");
+    if (!ctx) return null;
+    const g = ctx.createLinearGradient(0, 0, 64, 0);
+    g.addColorStop(0, "rgba(255,241,214,0)");
+    g.addColorStop(0.5, "rgba(255,244,224,0.5)");
+    g.addColorStop(1, "rgba(255,241,214,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 8);
+    return new THREE.CanvasTexture(c);
+  }, []);
+
   const active = useScene((s) => s.active);
   const reflective = tier === "high"; // mirror floor only on discrete GPUs (perf)
   const shadows = tier !== "safe";
@@ -83,25 +100,25 @@ export function Gallery({ tier }: { tier: QualityTier }) {
       col.lerp(new THREE.Color(FRAGRANCES[a].palette.light), k);
       spot.current.color.copy(col);
       const t = state.clock.elapsedTime;
-      spot.current.intensity = 22 * (1 + Math.sin(t * 8.3) * 0.02 + Math.sin(t * 19.7) * 0.012);
+      spot.current.intensity = 30 * (1 + Math.sin(t * 8.3) * 0.02 + Math.sin(t * 19.7) * 0.012);
     }
     if (rim.current) rim.current.position.set(-1.2, 2.3, sx.current - 0.7);
   });
 
   return (
     <group>
-      {/* soft creamy lighting */}
-      <ambientLight intensity={0.32} />
-      <hemisphereLight args={["#fff6ec", "#d8cdb6", 0.4]} />
-      <directionalLight position={[4, 9, 6]} intensity={0.28} color="#fff1da" />
-      <directionalLight position={[-6, 6, -4]} intensity={0.12} color="#eef0ff" />
+      {/* soft creamy base + a touch more contrast so the key reads as a light pool */}
+      <ambientLight intensity={0.22} />
+      <hemisphereLight args={["#fff6ec", "#cdbf9f", 0.28]} />
+      <directionalLight position={[4, 9, 6]} intensity={0.34} color="#fff1da" />
+      <directionalLight position={[-6, 6, -4]} intensity={0.1} color="#eef0ff" />
       <primitive object={target} />
       <spotLight
         ref={spot}
         angle={0.5}
         penumbra={1}
         distance={26}
-        intensity={22}
+        intensity={30}
         color="#fff3df"
         target={target}
         castShadow={shadows}
@@ -116,8 +133,17 @@ export function Gallery({ tier }: { tier: QualityTier }) {
 
       {/* drifting dust motes */}
       {tier !== "safe" && (
-        <Sparkles count={tier === "high" ? 70 : 40} scale={[7, 5, len]} position={[0, 3, midZ]} size={2.4} speed={0.18} opacity={0.4} color="#fff1d8" noise={1} />
+        <Sparkles count={tier === "high" ? 80 : 44} scale={[7, 5, len]} position={[0, 3, midZ]} size={2.6} speed={0.16} opacity={0.5} color="#fff1d8" noise={1} />
       )}
+
+      {/* soft volumetric light shafts angling through the corridor */}
+      {beamTex && tier !== "safe" &&
+        [0, 2, 4].map((i) => (
+          <mesh key={`beam-${i}`} position={[i % 4 === 0 ? -1.7 : 1.7, 3.7, stationZ(i) - STATION_GAP / 2]} rotation={[0, 0, 0.32]} renderOrder={3}>
+            <planeGeometry args={[1.8, 9]} />
+            <meshBasicMaterial map={beamTex} transparent blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} opacity={0.55} />
+          </mesh>
+        ))}
 
       {/* polished cream marble floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, midZ]} receiveShadow>
