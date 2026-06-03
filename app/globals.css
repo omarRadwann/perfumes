@@ -165,3 +165,26 @@ body.cursor-ring, body.cursor-ring a, body.cursor-ring button, body.cursor-ring 
 .kenburns { animation: kenburns 22s ease-in-out infinite alternate; transform-origin: center; }
 @keyframes kenburns { from { transform: scale(1.02); } to { transform: scale(1.12) translateY(-1.5%); } }
 @media (prefers-reduced-motion: reduce) { .kenburns { animation: none; } }
+
+/* --------------------------------------------- editorial collection strip ---- */
+.collection-section { position: relative; }
+.collection-track {
+  display: flex;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5.5rem);
+  padding: 16vh clamp(1.5rem, 6vw, 8rem);
+  width: max-content;
+}
+@media (max-width: 899px) {
+  .collection-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .collection-track { padding-block: 12vh; }
+}
+.collection-intro { flex: 0 0 auto; width: min(82vw, 23rem); }
+.collection-card { flex: 0 0 auto; width: clamp(14rem, 24vw, 20rem); display: block; }
+.collection-card-img { margin-top: 1.1rem; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: var(--color-marble); }
+.collection-card-img img {
+  width: 100%; height: 100%; object-fit: cover; transform: scale(1.02);
+  filter: saturate(0.97);
+  transition: transform 0.85s var(--ease-silk), filter 0.85s var(--ease-silk);
+}
+.collection-card:hover .collection-card-img img { transform: scale(1.08); filter: saturate(1.06); }
