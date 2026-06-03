@@ -4,94 +4,96 @@ import * as THREE from "three";
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useScene } from "@/lib/store";
-import { STATION_GAP } from "./Gallery";
+import { useScene, STATION_COUNT } from "@/lib/store";
+import { stationZ } from "./Gallery";
 import { prefersReducedMotion } from "@/lib/motion";
 
-// Choreographed gallery camera. GSAP tweens the *base* pose (camBase/lookBase) and
-// a transition *arc*; useFrame is the single writer to the real camera, adding
-// smoothed pointer parallax + the opened-product push-in. This keeps GSAP and the
-// render loop from fighting over camera.position.
-const CAM_DIST = 3.25;
-const EYE_Y = 1.72;
-const LOOK_Y = 1.6;
-const CAM_X = -1.2; // viewing the centred plinths from a 3/4 angle
-const LOOK_X = -0.05;
-const stationZ = (i: number) => -i * STATION_GAP;
+// CONTINUOUS journey camera. Scroll (float 0..1) scrubs one forward fly-through of
+// the arched corridor. The camera always travels FORWARD (no reversing); it DWELLS
+// and narrows to a telephoto zoom on each flacon (deep detail), then widens + rises
+// to glide through the arch to the next — "one scene that keeps zooming into the
+// next." useFrame is the single writer to the camera.
+const OFFSET = 2.9; // base distance the camera sits in front of the focus point
+const PULL = 1.4; // gentle extra step-back between products
+const LIFT = 0.7; // rise between products (a crest over the arch)
+const FOV_NEAR = 33; // telephoto compression on the flacon (zoomed-in detail)
+const FOV_FAR = 52; // wide corridor while flying between
+const EYE_Y = 1.6;
+const LOOK_Y = 1.5;
+const LOOK_X = -0.04;
+const CAM_X_PRODUCT = -1.05; // 3/4 framing at the product
+const CAM_X_TRAVEL = -0.12; // near-centred flying down the corridor
 
 export function GalleryCamera() {
   const { camera, pointer } = useThree();
-  const active = useScene((s) => s.active);
   const ready = useScene((s) => s.ready);
 
-  // establishing pose at boot (intro pushes in from here)
-  const camBase = useRef(new THREE.Vector3(0, EYE_Y + 1.5, stationZ(0) + CAM_DIST + 6.5));
-  const lookBase = useRef(new THREE.Vector3(LOOK_X, LOOK_Y + 0.3, stationZ(0)));
-  const arc = useRef({ y: 0 });
-  const travel = useRef({ z: 0 });
-  const look = useRef(new THREE.Vector3().copy(lookBase.current));
-  const close = useRef(0);
+  const intro = useRef({ v: 7 });
   const px = useRef(0);
   const py = useRef(0);
-  const firstRun = useRef(true);
+  const close = useRef(0);
   const reduce = useRef(false);
+  const pos = useRef(new THREE.Vector3(CAM_X_PRODUCT, EYE_Y, OFFSET + 7));
+  const look = useRef(new THREE.Vector3(LOOK_X, LOOK_Y, 0));
+  const started = useRef(false);
 
   useEffect(() => {
     reduce.current = prefersReducedMotion();
   }, []);
 
-  // Glide the FULL camera pose to the active alcove. First run (once ready) is the
-  // cinematic intro push-in from the establishing pose; later runs are quicker
-  // eased transitions with a gentle vertical arc. Tweening x,y,z every time keeps
-  // the 3/4 lateral offset locked in.
   useEffect(() => {
-    if (!ready) return;
-    const cam = { x: CAM_X, y: EYE_Y, z: stationZ(active) + CAM_DIST };
-    const lk = { x: LOOK_X, y: LOOK_Y, z: stationZ(active) };
+    if (!ready || started.current) return;
+    started.current = true;
     if (reduce.current) {
-      camBase.current.set(cam.x, cam.y, cam.z);
-      lookBase.current.set(lk.x, lk.y, lk.z);
-      firstRun.current = false;
+      intro.current.v = 0;
       return;
     }
-    const intro = firstRun.current;
-    firstRun.current = false;
-    const dur = intro ? 2.8 : 1.7;
-    const ease = intro ? "power3.out" : "power2.inOut";
-    gsap.to(camBase.current, { x: cam.x, y: cam.y, z: cam.z, duration: dur, ease, overwrite: true });
-    gsap.to(lookBase.current, { x: lk.x, y: lk.y, z: lk.z, duration: dur, ease, overwrite: true });
-    if (!intro) {
-      // cinematic dolly between alcoves: lift + settle, and pull back then push in
-      gsap.to(arc.current, {
-        keyframes: [
-          { y: 0.55, duration: 0.85, ease: "power2.out" },
-          { y: 0, duration: 0.85, ease: "power2.inOut" },
-        ],
-        overwrite: true,
-      });
-      gsap.to(travel.current, {
-        keyframes: [
-          { z: 1.7, duration: 0.85, ease: "power2.out" },
-          { z: 0, duration: 0.85, ease: "power2.in" },
-        ],
-        overwrite: true,
-      });
-    }
-  }, [active, ready]);
+    gsap.to(intro.current, { v: 0, duration: 2.8, ease: "power3.out", overwrite: true });
+  }, [ready]);
 
   useFrame((_, dt) => {
-    const k = 1 - Math.pow(0.0009, dt);
+    const k = 1 - Math.pow(1e-6, dt); // ~0.23/frame
+    const s = useScene.getState().scroll;
     const opened = useScene.getState().opened;
-    close.current += ((opened != null ? 1.1 : 0) - close.current) * k;
+    const N = STATION_COUNT;
+
+    const fidx = Math.max(0, Math.min(N - 1, s * (N - 1)));
+    const seg = Math.min(N - 2, Math.floor(fidx));
+    const f = fidx - seg;
+    const sm = f * f * (3 - 2 * f); // smoothstep → dwell at products, fast between
+    const focusZ = stationZ(seg) + (stationZ(seg + 1) - stationZ(seg)) * sm;
+
+    const closeness = (Math.cos(f * Math.PI * 2) + 1) / 2; // 1 at product centres, 0 between
+    const camDist = OFFSET + (1 - closeness) * PULL;
+    const fov = FOV_NEAR + (1 - closeness) * (FOV_FAR - FOV_NEAR);
+    const lift = (1 - closeness) * LIFT;
+    const camX = CAM_X_TRAVEL + (CAM_X_PRODUCT - CAM_X_TRAVEL) * closeness;
+
+    close.current += ((opened != null ? 0.8 : 0) - close.current) * k;
     px.current += (pointer.x - px.current) * k;
     py.current += (pointer.y - py.current) * k;
 
-    camera.position.set(
-      camBase.current.x + px.current * 0.45,
-      camBase.current.y + arc.current.y - py.current * 0.15,
-      camBase.current.z - close.current + travel.current.z
-    );
-    look.current.set(lookBase.current.x + px.current * 0.12, lookBase.current.y, lookBase.current.z);
+    const tx = camX + px.current * 0.28;
+    const ty = EYE_Y + lift - py.current * 0.1;
+    const tz = focusZ + camDist + intro.current.v - close.current;
+
+    pos.current.x += (tx - pos.current.x) * k;
+    pos.current.y += (ty - pos.current.y) * k;
+    pos.current.z += (tz - pos.current.z) * k;
+    camera.position.copy(pos.current);
+
+    // smooth FOV → telephoto zoom at products, wide between
+    const pcam = camera as THREE.PerspectiveCamera;
+    if (Math.abs(pcam.fov - fov) > 0.01) {
+      pcam.fov += (fov - pcam.fov) * k;
+      pcam.updateProjectionMatrix();
+    }
+
+    // look at the flacon; bias the gaze forward down the corridor while flying
+    const lookAhead = (1 - closeness) * 2.2;
+    look.current.x += (LOOK_X + px.current * 0.07 - look.current.x) * k;
+    look.current.y += (LOOK_Y + (1 - closeness) * 0.25 - look.current.y) * k;
+    look.current.z += (focusZ - lookAhead - look.current.z) * k;
     camera.lookAt(look.current);
   });
 
