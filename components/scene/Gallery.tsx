@@ -155,10 +155,10 @@ export function Gallery({ tier }: { tier: QualityTier }) {
         <meshStandardMaterial color="#fbf5ea" emissive="#fff3e2" emissiveIntensity={0.06} roughness={1} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* fly-through arch portals: an entrance + one between each pair of products */}
-      <ArchWall position={[0, 0, STATION_GAP / 2]} width={HALF_W * 2} height={WALL_H} />
+      {/* fly-through arch portals (thick → reads as a vaulted tunnel): entrance + between each pair */}
+      <ArchWall position={[0, 0, STATION_GAP / 2]} width={HALF_W * 2} height={WALL_H} depth={1.5} archWidth={3.0} archHeight={5.6} spring={2.8} />
       {Array.from({ length: N - 1 }).map((_, i) => (
-        <ArchWall key={`portal-${i}`} position={[0, 0, stationZ(i) - STATION_GAP / 2]} width={HALF_W * 2} height={WALL_H} />
+        <ArchWall key={`portal-${i}`} position={[0, 0, stationZ(i) - STATION_GAP / 2]} width={HALF_W * 2} height={WALL_H} depth={1.5} archWidth={3.0} archHeight={5.6} spring={2.8} />
       ))}
 
       {/* the six arched product rooms */}
@@ -166,9 +166,9 @@ export function Gallery({ tier }: { tier: QualityTier }) {
         <Alcove key={f.id} fragrance={f} index={i} z={stationZ(i)} active={active === i} tier={tier} plinthTex={plinthTex} archW={HALF_W * 2} archH={WALL_H} />
       ))}
 
-      {/* giant extruded scent-name typography standing in each arched room */}
+      {/* gilded extruded scent-name title behind each hero flacon, against the apse */}
       {FRAGRANCES.map((f, i) => (
-        <SceneTitle key={`title-${i}`} text={displayName(f.name)} position={[0, 1.62, stationZ(i) - 3.1]} size={0.8} tier={tier} />
+        <SceneTitle key={`title-${i}`} text={displayName(f.name)} position={[0, 1.7, stationZ(i) - 2.5]} size={0.62} color="#c7a96b" tier={tier} />
       ))}
     </group>
   );

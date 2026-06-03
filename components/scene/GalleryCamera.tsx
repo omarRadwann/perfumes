@@ -16,8 +16,8 @@ import { prefersReducedMotion } from "@/lib/motion";
 const OFFSET = 2.9; // base distance the camera sits in front of the focus point
 const PULL = 1.4; // gentle extra step-back between products
 const LIFT = 0.7; // rise between products (a crest over the arch)
-const FOV_NEAR = 33; // telephoto compression on the flacon (zoomed-in detail)
-const FOV_FAR = 52; // wide corridor while flying between
+const FOV_NEAR = 38; // gentle telephoto compression on the flacon
+const FOV_FAR = 46; // slightly wider while flying between (subtle, smooth)
 const EYE_Y = 1.6;
 const LOOK_Y = 1.5;
 const LOOK_X = -0.04;
