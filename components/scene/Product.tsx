@@ -143,7 +143,7 @@ export default function Product({ fragrance, index, active, tier }: Props) {
     if (active) setOpened(opened ? null : index);
   };
 
-  const glass = active && transmissive ? (
+  const glass = active && tier === "high" ? (
     <MeshTransmissionMaterial
       backside={tier === "high"}
       backsideThickness={0.3}

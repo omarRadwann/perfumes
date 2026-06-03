@@ -56,7 +56,8 @@ export function Gallery({ tier }: { tier: QualityTier }) {
   }, [wall]);
 
   const active = useScene((s) => s.active);
-  const reflective = tier !== "safe";
+  const reflective = tier === "high"; // mirror floor only on discrete GPUs (perf)
+  const shadows = tier !== "safe";
 
   // Soft follow key + warm rim, gliding along the CONTINUOUS journey focus point.
   const spot = useRef<THREE.SpotLight>(null);
@@ -103,7 +104,7 @@ export function Gallery({ tier }: { tier: QualityTier }) {
         intensity={22}
         color="#fff3df"
         target={target}
-        castShadow={reflective}
+        castShadow={shadows}
         shadow-mapSize-width={tier === "high" ? 2048 : 1024}
         shadow-mapSize-height={tier === "high" ? 2048 : 1024}
         shadow-bias={-0.0004}

@@ -16,12 +16,33 @@ export default function Experience() {
   const sound = useScene((s) => s.sound);
   const active = useScene((s) => s.active);
 
-  // Smooth scroll → journey progress (reference step 3).
+  // Smooth scroll → journey progress, with a gentle snap that settles on each room.
   useEffect(() => {
-    const l = new Lenis({ lerp: 0.08, wheelMultiplier: 1, touchMultiplier: 1.2 });
+    const l = new Lenis({ lerp: 0.075, wheelMultiplier: 1, touchMultiplier: 1.2 });
     lenis.current = l;
     (window as Window & { __lenis?: Lenis }).__lenis = l; // debug/test handle
-    l.on("scroll", (e: Lenis) => setScroll(e.progress || 0));
+    const N = STATION_COUNT;
+    let snapTimer: ReturnType<typeof setTimeout> | null = null;
+    let snapping = false;
+    l.on("scroll", () => {
+      setScroll(l.progress || 0);
+      if (snapping) return;
+      if (snapTimer) clearTimeout(snapTimer);
+      snapTimer = setTimeout(() => {
+        const prog = l.progress || 0;
+        const target = Math.round(prog * (N - 1)) / (N - 1);
+        if (Math.abs(target - prog) > 0.004 && l.limit) {
+          snapping = true;
+          l.scrollTo(target * l.limit, {
+            duration: 0.7,
+            easing: (t: number) => 1 - Math.pow(1 - t, 3),
+            onComplete: () => {
+              snapping = false;
+            },
+          });
+        }
+      }, 150);
+    });
     let raf = 0;
     const loop = (t: number) => {
       l.raf(t);
