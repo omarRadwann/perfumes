@@ -166,7 +166,7 @@ export default function Product({ fragrance, index, active, tier }: Props) {
         </group>
 
         {/* glass flacon in front */}
-        <group ref={bottle} position={[0, 0.42, 0.5]} scale={[1, 1, 0.74]}>
+        <group ref={bottle} position={[0, 0.42, 0.6]} scale={[1.12, 1.12, 0.82]}>
           <mesh castShadow>
             <latheGeometry args={[BODY, segments]} />
             {transmissive ? (
@@ -182,7 +182,7 @@ export default function Product({ fragrance, index, active, tier }: Props) {
                 color={"#ffffff"}
                 attenuationColor={p.liquid}
                 attenuationDistance={0.45}
-                envMapIntensity={1.4}
+                envMapIntensity={1.6}
               />
             ) : (
               <meshPhysicalMaterial transparent opacity={0.4} roughness={0.12} ior={1.45} metalness={0} color={"#f2eee6"} envMapIntensity={1.5} />

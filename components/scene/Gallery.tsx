@@ -61,6 +61,7 @@ export function Gallery({ tier }: { tier: QualityTier }) {
   // Shared follow spotlight: glides to the active alcove, takes its light tint, and
   // casts the product's grounding shadow onto the plinth.
   const spot = useRef<THREE.SpotLight>(null);
+  const rim = useRef<THREE.SpotLight>(null);
   const target = useMemo(() => new THREE.Object3D(), []);
   const sx = useRef(0);
   const col = useMemo(() => new THREE.Color("#fff3df"), []);
@@ -80,6 +81,10 @@ export function Gallery({ tier }: { tier: QualityTier }) {
       const t = state.clock.elapsedTime;
       spot.current.intensity = 40 * (1 + Math.sin(t * 8.3) * 0.03 + Math.sin(t * 19.7) * 0.018);
     }
+    if (rim.current) {
+      // warm rim/back light between product and niche, grazing toward camera
+      rim.current.position.set(-1.25, 2.4, sx.current - 0.7);
+    }
   });
 
   const len = STATION_GAP * (FRAGRANCES.length - 1) + 16;
@@ -87,8 +92,8 @@ export function Gallery({ tier }: { tier: QualityTier }) {
   return (
     <group>
       {/* lighting — bright, warm, even (kept low; the env map does a lot) */}
-      <ambientLight intensity={0.24} />
-      <hemisphereLight args={["#fff4e2", "#cdbf9f", 0.32]} />
+      <ambientLight intensity={0.22} />
+      <hemisphereLight args={["#fff4e2", "#cdbf9f", 0.26]} />
       <directionalLight position={[4, 9, 6]} intensity={0.4} color="#fff1da" />
       <directionalLight position={[-6, 6, -4]} intensity={0.16} color="#eef0ff" />
       <primitive object={target} />
@@ -108,6 +113,7 @@ export function Gallery({ tier }: { tier: QualityTier }) {
         shadow-camera-near={1}
         shadow-camera-far={18}
       />
+      <spotLight ref={rim} angle={0.6} penumbra={1} distance={7} intensity={12} color="#ffeccf" target={target} />
 
       {/* drifting dust motes catching the light */}
       {tier !== "safe" && (

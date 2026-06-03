@@ -20,6 +20,7 @@ export default function Experience() {
   useEffect(() => {
     const l = new Lenis({ lerp: 0.08, wheelMultiplier: 1, touchMultiplier: 1.2 });
     lenis.current = l;
+    (window as Window & { __lenis?: Lenis }).__lenis = l; // debug/test handle
     l.on("scroll", (e: Lenis) => setScroll(e.progress || 0));
     let raf = 0;
     const loop = (t: number) => {

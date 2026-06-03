@@ -12,9 +12,9 @@ import { prefersReducedMotion } from "@/lib/motion";
 // a transition *arc*; useFrame is the single writer to the real camera, adding
 // smoothed pointer parallax + the opened-product push-in. This keeps GSAP and the
 // render loop from fighting over camera.position.
-const CAM_DIST = 4.1;
-const EYE_Y = 1.8;
-const LOOK_Y = 1.65;
+const CAM_DIST = 3.85;
+const EYE_Y = 1.78;
+const LOOK_Y = 1.62;
 const CAM_X = -1.35; // viewing the centred plinths from a 3/4 angle
 const LOOK_X = -0.05;
 const stationZ = (i: number) => -i * STATION_GAP;

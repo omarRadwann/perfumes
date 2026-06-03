@@ -72,12 +72,11 @@ export default function SceneCanvas() {
   return (
     <Canvas
       frameloop="always"
-      shadows
+      shadows={{ type: THREE.PCFShadowMap }}
       dpr={clampDpr(tier, integrated.current)}
       camera={{ position: [0, 1.6, 4.9], fov: 42, near: 0.1, far: 120 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
       onCreated={({ gl, scene }) => {
-        gl.shadowMap.type = THREE.PCFSoftShadowMap;
         const renderer = readGpuRenderer(gl.getContext());
         integrated.current = isIntegratedGpu(renderer);
         if (!forced.current) {
