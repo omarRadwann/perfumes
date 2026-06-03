@@ -4,7 +4,8 @@ import * as THREE from "three";
 import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
-import { EffectComposer, Bloom, Vignette, SMAA, DepthOfField } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Vignette, SMAA, DepthOfField, ChromaticAberration, Noise } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
 import {
   initialTier,
   readForcedTier,
@@ -35,15 +36,29 @@ function Effects({ tier, integrated }: { tier: QualityTier; integrated: boolean 
   const passes = [<SMAA key="smaa" />];
   if (bloom) {
     passes.push(
-      <Bloom key="bloom" mipmapBlur intensity={0.34} luminanceThreshold={0.82} luminanceSmoothing={0.25} />
+      <Bloom key="bloom" mipmapBlur intensity={0.5} luminanceThreshold={0.7} luminanceSmoothing={0.3} />
     );
   }
   if (dof) {
     passes.push(
-      <DepthOfField key="dof" target={focus.current} focalLength={0.026} bokehScale={1.7} height={480} />
+      <DepthOfField key="dof" target={focus.current} focalLength={0.025} bokehScale={2.0} height={480} />
     );
   }
-  passes.push(<Vignette key="vignette" offset={0.28} darkness={0.6} />);
+  if (tier !== "safe") {
+    passes.push(
+      <ChromaticAberration
+        key="ca"
+        blendFunction={BlendFunction.NORMAL}
+        offset={new THREE.Vector2(0.0008, 0.0008)}
+        radialModulation
+        modulationOffset={0.35}
+      />
+    );
+  }
+  passes.push(<Vignette key="vignette" offset={0.26} darkness={0.72} />);
+  if (tier !== "safe") {
+    passes.push(<Noise key="noise" premultiply opacity={0.045} blendFunction={BlendFunction.OVERLAY} />);
+  }
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
       {passes}

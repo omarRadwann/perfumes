@@ -62,6 +62,7 @@ export function Gallery({ tier }: { tier: QualityTier }) {
   // casts the product's grounding shadow onto the plinth.
   const spot = useRef<THREE.SpotLight>(null);
   const rim = useRef<THREE.SpotLight>(null);
+  const shaft = useRef<THREE.Mesh>(null);
   const target = useMemo(() => new THREE.Object3D(), []);
   const sx = useRef(0);
   const col = useMemo(() => new THREE.Color("#fff3df"), []);
@@ -79,11 +80,16 @@ export function Gallery({ tier }: { tier: QualityTier }) {
       spot.current.color.copy(col);
       // candle-like flicker
       const t = state.clock.elapsedTime;
-      spot.current.intensity = 40 * (1 + Math.sin(t * 8.3) * 0.03 + Math.sin(t * 19.7) * 0.018);
+      spot.current.intensity = 58 * (1 + Math.sin(t * 8.3) * 0.03 + Math.sin(t * 19.7) * 0.018);
     }
     if (rim.current) {
       // warm rim/back light between product and niche, grazing toward camera
       rim.current.position.set(-1.25, 2.4, sx.current - 0.7);
+    }
+    if (shaft.current) {
+      shaft.current.position.z = sx.current + 0.15;
+      const mat = shaft.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.05 + Math.sin(state.clock.elapsedTime * 0.7) * 0.012; // gentle breathe
     }
   });
 
@@ -92,17 +98,17 @@ export function Gallery({ tier }: { tier: QualityTier }) {
   return (
     <group>
       {/* lighting — bright, warm, even (kept low; the env map does a lot) */}
-      <ambientLight intensity={0.22} />
-      <hemisphereLight args={["#fff4e2", "#cdbf9f", 0.26]} />
-      <directionalLight position={[4, 9, 6]} intensity={0.4} color="#fff1da" />
-      <directionalLight position={[-6, 6, -4]} intensity={0.16} color="#eef0ff" />
+      <ambientLight intensity={0.16} />
+      <hemisphereLight args={["#fff4e2", "#c4b696", 0.2]} />
+      <directionalLight position={[4, 9, 6]} intensity={0.34} color="#fff1da" />
+      <directionalLight position={[-6, 6, -4]} intensity={0.12} color="#eef0ff" />
       <primitive object={target} />
       <spotLight
         ref={spot}
-        angle={0.52}
-        penumbra={1}
+        angle={0.46}
+        penumbra={0.9}
         distance={26}
-        intensity={40}
+        intensity={58}
         color="#fff3df"
         target={target}
         castShadow={reflective}
@@ -114,6 +120,22 @@ export function Gallery({ tier }: { tier: QualityTier }) {
         shadow-camera-far={18}
       />
       <spotLight ref={rim} angle={0.6} penumbra={1} distance={7} intensity={12} color="#ffeccf" target={target} />
+
+      {/* volumetric light shaft over the active product (museum downlight catching dust) */}
+      {tier !== "safe" && (
+        <mesh ref={shaft} position={[0.2, 4.0, 0]} rotation={[0, 0, -0.08]} renderOrder={2}>
+          <coneGeometry args={[1.3, 5.4, 56, 1, true]} />
+          <meshBasicMaterial
+            color="#ffe6c4"
+            transparent
+            opacity={0.05}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
 
       {/* drifting dust motes catching the light */}
       {tier !== "safe" && (

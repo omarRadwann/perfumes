@@ -12,10 +12,10 @@ import { prefersReducedMotion } from "@/lib/motion";
 // a transition *arc*; useFrame is the single writer to the real camera, adding
 // smoothed pointer parallax + the opened-product push-in. This keeps GSAP and the
 // render loop from fighting over camera.position.
-const CAM_DIST = 3.85;
-const EYE_Y = 1.78;
-const LOOK_Y = 1.62;
-const CAM_X = -1.35; // viewing the centred plinths from a 3/4 angle
+const CAM_DIST = 3.25;
+const EYE_Y = 1.72;
+const LOOK_Y = 1.6;
+const CAM_X = -1.2; // viewing the centred plinths from a 3/4 angle
 const LOOK_X = -0.05;
 const stationZ = (i: number) => -i * STATION_GAP;
 
@@ -28,6 +28,7 @@ export function GalleryCamera() {
   const camBase = useRef(new THREE.Vector3(0, EYE_Y + 1.5, stationZ(0) + CAM_DIST + 6.5));
   const lookBase = useRef(new THREE.Vector3(LOOK_X, LOOK_Y + 0.3, stationZ(0)));
   const arc = useRef({ y: 0 });
+  const travel = useRef({ z: 0 });
   const look = useRef(new THREE.Vector3().copy(lookBase.current));
   const close = useRef(0);
   const px = useRef(0);
@@ -55,15 +56,23 @@ export function GalleryCamera() {
     }
     const intro = firstRun.current;
     firstRun.current = false;
-    const dur = intro ? 2.6 : 1.3;
-    const ease = intro ? "power3.out" : "power3.inOut";
+    const dur = intro ? 2.8 : 1.7;
+    const ease = intro ? "power3.out" : "power2.inOut";
     gsap.to(camBase.current, { x: cam.x, y: cam.y, z: cam.z, duration: dur, ease, overwrite: true });
     gsap.to(lookBase.current, { x: lk.x, y: lk.y, z: lk.z, duration: dur, ease, overwrite: true });
     if (!intro) {
+      // cinematic dolly between alcoves: lift + settle, and pull back then push in
       gsap.to(arc.current, {
         keyframes: [
-          { y: 0.3, duration: 0.65, ease: "power2.out" },
-          { y: 0, duration: 0.65, ease: "power2.in" },
+          { y: 0.55, duration: 0.85, ease: "power2.out" },
+          { y: 0, duration: 0.85, ease: "power2.inOut" },
+        ],
+        overwrite: true,
+      });
+      gsap.to(travel.current, {
+        keyframes: [
+          { z: 1.7, duration: 0.85, ease: "power2.out" },
+          { z: 0, duration: 0.85, ease: "power2.in" },
         ],
         overwrite: true,
       });
@@ -80,7 +89,7 @@ export function GalleryCamera() {
     camera.position.set(
       camBase.current.x + px.current * 0.45,
       camBase.current.y + arc.current.y - py.current * 0.15,
-      camBase.current.z - close.current
+      camBase.current.z - close.current + travel.current.z
     );
     look.current.set(lookBase.current.x + px.current * 0.12, lookBase.current.y, lookBase.current.z);
     camera.lookAt(look.current);
