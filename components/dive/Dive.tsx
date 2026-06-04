@@ -22,6 +22,7 @@ import { DebugOverlay } from "./DebugOverlay";
 import { Hud } from "./Hud";
 import { CrystalFlacon } from "./CrystalFlacon";
 import { WorldSet } from "./WorldSet";
+import { EditorialHome } from "@/components/editorial/EditorialHome";
 
 const N = FRAGRANCES.length;
 const GAP = 9;
@@ -281,11 +282,20 @@ export function Dive() {
   const integrated = useRef(false);
   // adaptive quality level: 0 full · 1 drop DoF · 2 drop DoF + thin particles
   const [perf, setPerf] = useState(0);
+  // stop rendering when the tab is hidden; fall back to 2D if the GPU context drops
+  const [frameloop, setFrameloop] = useState<"always" | "never">("always");
+  const [lost, setLost] = useState(false);
 
   useEffect(() => {
     forced.current = readForcedTier();
     setTier(forced.current ?? initialTier());
   }, [setTier]);
+
+  useEffect(() => {
+    const onVis = () => setFrameloop(document.hidden ? "never" : "always");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   useEffect(() => {
     if (prefersReducedMotion()) return;
@@ -304,11 +314,14 @@ export function Dive() {
     };
   }, [setScroll]);
 
+  // GPU context died (driver crash / resource pressure) → the crisp 2D site instead of a black canvas
+  if (lost) return <EditorialHome />;
+
   return (
     <>
       <div className="fixed inset-0" style={{ background: "#06060a" }}>
         <Canvas
-          frameloop="always"
+          frameloop={frameloop}
           shadows={false}
           dpr={clampDpr(tier, integrated.current)}
           camera={{ position: [0, 1, 6.5], fov: 44, near: 0.1, far: 200 }}
@@ -328,6 +341,14 @@ export function Dive() {
             const hasTRS = "transmissionResolutionScale" in gl;
             if (hasTRS) grm.transmissionResolutionScale = tier === "high" ? 0.5 : 0.34;
             scene.background = new THREE.Color("#06060a");
+            gl.domElement.addEventListener(
+              "webglcontextlost",
+              (e) => {
+                e.preventDefault();
+                setLost(true);
+              },
+              { once: true }
+            );
             console.info(`[Dive] tier=${useScene.getState().tier} gpu=${r || "?"} transmissionScale=${hasTRS ? grm.transmissionResolutionScale : "UNSUPPORTED"}`);
             setReady(true);
           }}
