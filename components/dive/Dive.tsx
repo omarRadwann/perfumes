@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, useGLTF, PerformanceMonitor, Sparkles } from "@react-three/drei";
+import { Environment, Lightformer, PerformanceMonitor, Sparkles } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette, SMAA } from "@react-three/postprocessing";
 import Lenis from "lenis";
 import { FRAGRANCES } from "@/lib/fragrances";
@@ -17,15 +17,13 @@ import {
   clampDpr,
   type QualityTier,
 } from "@/lib/deviceTier";
-import { withBase } from "@/lib/basePath";
 import { prefersReducedMotion } from "@/lib/motion";
 import { DebugOverlay } from "./DebugOverlay";
 import { Hud } from "./Hud";
+import { CrystalFlacon } from "./CrystalFlacon";
 
 const N = FRAGRANCES.length;
 const GAP = 9;
-const modelUrl = (i: number) => withBase(`/models/m${i % 4}.glb`);
-for (let i = 0; i < 4; i++) useGLTF.preload(withBase(`/models/m${i}.glb`));
 
 // Each flacon's anchor along the descent (deeper + lower + gentle lateral drift).
 const flaconPos = (i: number) => new THREE.Vector3(Math.sin(i * 1.3) * 1.5, -i * 1.7, -i * GAP);
@@ -33,6 +31,22 @@ const smoothstep = (f: number) => f * f * (3 - 2 * f);
 
 // per-scent nocturnal void tints — the world's mood shifts as you descend
 const ATMOS = ["#06060a", "#100b04", "#0e0507", "#05070f", "#0a0a0d", "#100c07"].map((h) => new THREE.Color(h));
+
+// per-world fog depth — smoke worlds close in, the starfield opens up
+const FOG_FAR = [30, 28, 26, 38, 24, 30];
+
+// Each scent inhabits its own atmosphere: ink-smoke, rising embers, drifting
+// rose dust, a cold starfield, slow lunar smoke, warm sandal haze. Distinct in
+// colour + density + size + speed so the six worlds read apart, not just the bottles.
+type WorldAir = { color: string; count: number; size: number; speed: number; opacity: number; noise: number; scale: [number, number, number] };
+const WORLD_ATMOS: WorldAir[] = [
+  { color: "#b9a98a", count: 26, size: 1.6, speed: 0.05, opacity: 0.3, noise: 1.3, scale: [6, 7, 6] }, // Noir d'Encre — ink smoke
+  { color: "#ffb24d", count: 64, size: 2.5, speed: 0.55, opacity: 0.75, noise: 2.2, scale: [6, 7.5, 6] }, // Ombre d'Or — rising embers
+  { color: "#d8556b", count: 74, size: 2.7, speed: 0.16, opacity: 0.55, noise: 0.9, scale: [6.5, 7, 6.5] }, // Velours Rouge — rose dust
+  { color: "#cdd8ff", count: 120, size: 1.25, speed: 0.03, opacity: 0.85, noise: 0.35, scale: [10, 10, 10] }, // Nuit Bleue — cold starfield
+  { color: "#aeb6bd", count: 40, size: 2.9, speed: 0.09, opacity: 0.42, noise: 1.7, scale: [6, 7, 6] }, // Éclipse — lunar smoke
+  { color: "#ffd9a0", count: 52, size: 2.1, speed: 0.12, opacity: 0.6, noise: 1.0, scale: [6, 6.5, 6] }, // Santal Ivoire — sandal haze
+];
 
 function curFocus() {
   const s = useScene.getState().scroll;
@@ -46,13 +60,18 @@ function curFocus() {
 function Atmosphere() {
   const { scene } = useThree();
   const cur = useRef(new THREE.Color(ATMOS[0]));
+  const far = useRef(FOG_FAR[0]);
   useFrame((_, dt) => {
     const k = 1 - Math.pow(0.0015, dt);
     const { seg, f } = curFocus();
     const target = ATMOS[seg].clone().lerp(ATMOS[seg + 1], f);
     cur.current.lerp(target, k);
+    far.current += (THREE.MathUtils.lerp(FOG_FAR[seg], FOG_FAR[seg + 1], f) - far.current) * k;
     if (scene.background instanceof THREE.Color) scene.background.copy(cur.current);
-    if (scene.fog) (scene.fog as THREE.Fog).color.copy(cur.current);
+    if (scene.fog) {
+      (scene.fog as THREE.Fog).color.copy(cur.current);
+      (scene.fog as THREE.Fog).far = far.current;
+    }
   });
   return null;
 }
@@ -92,38 +111,54 @@ function Effects({ tier }: { tier: QualityTier }) {
   );
 }
 
-function Flacon({ i }: { i: number }) {
-  const { scene } = useGLTF(modelUrl(i));
-  const ref = useRef<THREE.Group>(null);
+// The drifting medium each scent lives in. One localized field per world (faded
+// by fog at distance) — never a single global dust, which would flatten all six.
+function WorldAtmosphere({ i, tier }: { i: number; tier: QualityTier }) {
+  const a = WORLD_ATMOS[i];
+  const pos = flaconPos(i);
+  const count = tier === "high" ? a.count : Math.round(a.count * 0.55);
+  return (
+    <Sparkles
+      count={count}
+      scale={a.scale}
+      position={[pos.x, pos.y + 0.4, pos.z]}
+      size={a.size}
+      speed={a.speed}
+      opacity={a.opacity}
+      color={a.color}
+      noise={a.noise}
+    />
+  );
+}
+
+function Flacon({ i, tier }: { i: number; tier: QualityTier }) {
+  const spin = useRef<THREE.Group>(null);
+  const bob = useRef<THREE.Group>(null);
   const p = FRAGRANCES[i].palette;
-  const obj = useMemo(() => {
-    const c = scene.clone(true);
-    c.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) {
-        m.castShadow = true;
-        const mat = m.material as THREE.MeshStandardMaterial;
-        if (mat) {
-          mat.roughness = Math.min(mat.roughness ?? 0.5, 0.26);
-          mat.envMapIntensity = 1.15;
-          mat.needsUpdate = true;
-        }
-      }
-    });
-    return c;
-  }, [scene]);
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.16;
+  const phase = i * 1.7;
+  useFrame((state, dt) => {
+    if (spin.current) spin.current.rotation.y += dt * 0.14;
+    const t = state.clock.elapsedTime;
+    if (bob.current) {
+      bob.current.position.y = Math.sin(t * 0.5 + phase) * 0.07;
+      // the focal flacon swells almost imperceptibly — a held breath
+      const want = useScene.getState().active === i ? 1.66 : 1.5;
+      const s = bob.current.scale.x + (want - bob.current.scale.x) * (1 - Math.pow(0.05, dt));
+      bob.current.scale.setScalar(s);
+    }
   });
   const pos = flaconPos(i);
   return (
     <group position={pos}>
-      <group ref={ref} scale={1.6} position={[0, -0.5, 0]}>
-        <primitive object={obj} />
+      <group ref={bob} scale={1.5} position={[0, -0.55, 0]}>
+        <group ref={spin}>
+          <CrystalFlacon i={i} tier={tier} />
+        </group>
       </group>
-      {/* per-scent colored glow — each flacon a beacon in the dark */}
-      <pointLight position={[0, 1.4, 1.6]} intensity={7} distance={10} decay={2} color={p.light} />
-      <pointLight position={[-1.5, 0.4, 0.6]} intensity={3} distance={7} decay={2} color={p.accent} />
+      {/* per-scent colored glow — lights the juice + label from the front,
+          kept low so the metal cap catches highlights instead of blooming out */}
+      <pointLight position={[0, 0.35, 1.9]} intensity={3.4} distance={11} decay={2} color={p.light} />
+      <pointLight position={[-1.5, 0.5, 0.7]} intensity={2.2} distance={7} decay={2} color={p.accent} />
     </group>
   );
 }
@@ -165,12 +200,10 @@ function Scene({ tier }: { tier: QualityTier }) {
         <Lightformer form="rect" intensity={0.8} color="#fff3df" scale={[10, 10, 1]} position={[0, 6, 8]} />
         <Lightformer form="rect" intensity={0.5} color="#9fb4ff" scale={[8, 8, 1]} position={[-8, 2, -6]} rotation={[0, Math.PI / 3, 0]} />
       </Environment>
-      {tier !== "safe" && (
-        <Sparkles count={tier === "high" ? 120 : 60} scale={[14, N * GAP, 14]} position={[0, (-N * 1.7) / 2, (-N * GAP) / 2]} size={2} speed={0.12} opacity={0.5} color="#ffe9c8" noise={1} />
-      )}
       {FRAGRANCES.map((_, i) => (
-        <Flacon key={i} i={i} />
+        <Flacon key={i} i={i} tier={tier} />
       ))}
+      {tier !== "safe" && FRAGRANCES.map((_, i) => <WorldAtmosphere key={`air-${i}`} i={i} tier={tier} />)}
       <FollowLight />
       <Atmosphere />
       <Rig />
