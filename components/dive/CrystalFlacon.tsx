@@ -18,6 +18,10 @@ export function CrystalFlacon({ i, tier }: { i: number; tier: QualityTier }) {
   const f = FRAGRANCES[i];
   const p = f.palette;
   const active = useScene((s) => s.active === i);
+  // Only the focal flacon + its neighbours refract (glass transmission re-renders the
+  // whole scene per bottle — the iGPU crash vector). Distant bottles drop to transmission 0.
+  // Same material element throughout (only a uniform flips) so React never swaps it.
+  const near = useScene((s) => Math.abs(s.active - i) <= 1);
   const transmissive = tier !== "safe";
   const { nodes } = useGLTF(MODEL) as unknown as { nodes: Record<string, THREE.Mesh> };
 
@@ -57,14 +61,14 @@ export function CrystalFlacon({ i, tier }: { i: number; tier: QualityTier }) {
   // Refractive crystal that lets the emissive juice glow through; focal flacon crisper.
   const glass = transmissive ? (
     <meshPhysicalMaterial
-      transmission={1}
+      transmission={near ? 1 : 0}
       thickness={active ? 0.5 : 0.4}
-      roughness={active ? 0.04 : 0.09}
+      roughness={near ? (active ? 0.04 : 0.09) : 0.16}
       ior={1.49}
       metalness={0}
       clearcoat={1}
       clearcoatRoughness={active ? 0.06 : 0.12}
-      color={"#ffffff"}
+      color={near ? "#ffffff" : "#d8cba6"}
       attenuationColor={p.liquid}
       attenuationDistance={4}
       envMapIntensity={active ? 1.85 : 1.4}
