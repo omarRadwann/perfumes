@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { AdaptiveDpr, Environment, Lightformer, PerformanceMonitor, Sparkles } from "@react-three/drei";
+import { AdaptiveDpr, Environment, Lightformer, MeshReflectorMaterial, PerformanceMonitor, Sparkles } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette, SMAA, DepthOfField } from "@react-three/postprocessing";
 import Lenis from "lenis";
 import { FRAGRANCES } from "@/lib/fragrances";
@@ -21,6 +21,7 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { DebugOverlay } from "./DebugOverlay";
 import { Hud } from "./Hud";
 import { CrystalFlacon } from "./CrystalFlacon";
+import { WorldSet } from "./WorldSet";
 
 const N = FRAGRANCES.length;
 const GAP = 9;
@@ -192,6 +193,27 @@ function Flacon({ i, tier }: { i: number; tier: QualityTier }) {
   );
 }
 
+// One real mirror floor that follows the focal flacon (so it costs a single
+// reflection pass, not six) — gives the bottle a soft luxe reflection like the refs.
+function FocalFloor() {
+  const ref = useRef<THREE.Mesh>(null);
+  const p = useRef(new THREE.Vector3(0, -0.95, 0));
+  useFrame((_, dt) => {
+    const k = 1 - Math.pow(0.0009, dt);
+    const { focus } = curFocus();
+    p.current.x += (focus.x - p.current.x) * k;
+    p.current.y += (focus.y - 0.95 - p.current.y) * k;
+    p.current.z += (focus.z - p.current.z) * k;
+    if (ref.current) ref.current.position.copy(p.current);
+  });
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2}>
+      <circleGeometry args={[3.8, 64]} />
+      <MeshReflectorMaterial resolution={512} mixBlur={3} mixStrength={1.1} blur={[160, 60]} mirror={0.9} depthScale={1} minDepthThreshold={0.4} maxDepthThreshold={1.4} color="#0a0a0e" metalness={0.6} roughness={0.4} />
+    </mesh>
+  );
+}
+
 // Single camera, scrubbed by scroll: a continuous dive past each flacon.
 function Rig() {
   const { camera } = useThree();
@@ -205,16 +227,16 @@ function Rig() {
     const f = fidx - seg;
     const focus = flaconPos(seg).lerp(flaconPos(seg + 1), smoothstep(f));
     const closeness = (Math.cos(f * Math.PI * 2) + 1) / 2; // 1 at flacons, 0 between
-    const dist = 5.4 + (1 - closeness) * 3.6;
+    const dist = 6.0 + (1 - closeness) * 3.2;
     const tx = focus.x * 0.5 + (1 - closeness) * 0.6;
-    const ty = focus.y + 0.7 + (1 - closeness) * 0.9;
+    const ty = focus.y + 0.62 + (1 - closeness) * 0.7; // near eye-level, a touch above
     const tz = focus.z + dist;
     pos.current.x += (tx - pos.current.x) * k;
     pos.current.y += (ty - pos.current.y) * k;
     pos.current.z += (tz - pos.current.z) * k;
     camera.position.copy(pos.current);
     look.current.x += (focus.x - look.current.x) * k;
-    look.current.y += (focus.y + 0.45 - look.current.y) * k;
+    look.current.y += (focus.y + 0.25 - look.current.y) * k;
     look.current.z += (focus.z - look.current.z) * k;
     camera.lookAt(look.current);
   });
@@ -225,7 +247,7 @@ function Scene({ tier, perf }: { tier: QualityTier; perf: number }) {
   return (
     <>
       <ambientLight intensity={0.12} />
-      <Environment resolution={tier === "high" ? 512 : 256} frames={1}>
+      <Environment resolution={tier === "high" ? 512 : 192} frames={1}>
         <Lightformer form="rect" intensity={0.8} color="#fff3df" scale={[10, 10, 1]} position={[0, 6, 8]} />
         <Lightformer form="rect" intensity={0.5} color="#9fb4ff" scale={[8, 8, 1]} position={[-8, 2, -6]} rotation={[0, Math.PI / 3, 0]} />
         {/* tall narrow softbox streaks — the vertical highlight that makes glass + metal
@@ -233,6 +255,12 @@ function Scene({ tier, perf }: { tier: QualityTier; perf: number }) {
         <Lightformer form="rect" intensity={2.0} color="#ffffff" scale={[0.5, 6, 1]} position={[2.6, 1.4, 4.2]} />
         <Lightformer form="rect" intensity={1.1} color="#ffe7c6" scale={[0.35, 5, 1]} position={[-2.8, 1.0, 3.4]} />
       </Environment>
+      {FRAGRANCES.map((_, i) => (
+        <group key={`set-${i}`} position={flaconPos(i)}>
+          <WorldSet i={i} />
+        </group>
+      ))}
+      {tier === "high" && perf < 1 && <FocalFloor />}
       {FRAGRANCES.map((_, i) => (
         <Flacon key={i} i={i} tier={tier} />
       ))}
@@ -298,7 +326,7 @@ export function Dive() {
             // half-res keeps the refraction convincing at a fraction of the fill cost.
             const grm = gl as unknown as { transmissionResolutionScale?: number };
             const hasTRS = "transmissionResolutionScale" in gl;
-            if (hasTRS) grm.transmissionResolutionScale = tier === "high" ? 0.5 : 0.4;
+            if (hasTRS) grm.transmissionResolutionScale = tier === "high" ? 0.5 : 0.34;
             scene.background = new THREE.Color("#06060a");
             console.info(`[Dive] tier=${useScene.getState().tier} gpu=${r || "?"} transmissionScale=${hasTRS ? grm.transmissionResolutionScale : "UNSUPPORTED"}`);
             setReady(true);
