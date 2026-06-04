@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { FRAGRANCES } from "@/lib/fragrances";
 import { useScene } from "@/lib/store";
 import { prefersReducedMotion } from "@/lib/motion";
+import { setSoundEnabled, setStationTone } from "@/lib/soundscape";
 
 const pad = (n: number) => `0${n}`.slice(-2);
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
@@ -19,6 +20,8 @@ const TIERS = [
 export function Hud() {
   const active = useScene((s) => s.active);
   const scroll = useScene((s) => s.scroll);
+  const sound = useScene((s) => s.sound);
+  const setSound = useScene((s) => s.setSound);
   const f = FRAGRANCES[active];
   const n = FRAGRANCES.length;
   const panel = useRef<HTMLDivElement>(null);
@@ -26,11 +29,23 @@ export function Hud() {
   useEffect(() => {
     if (prefersReducedMotion() || !panel.current) return;
     const ctx = gsap.context(() => {
-      gsap.from("[data-rv]", { y: 18, opacity: 0, duration: 0.8, stagger: 0.06, ease: "power3.out", delay: 0.05 });
-      gsap.from("[data-nm]", { yPercent: 14, opacity: 0, duration: 0.9, ease: "power3.out" });
+      gsap.from("[data-rv]", { y: 18, opacity: 0, duration: 0.8, stagger: 0.06, ease: "power3.out", delay: 0.1 });
+      gsap.from("[data-char]", { yPercent: 115, duration: 0.7, stagger: 0.03, ease: "power3.out", delay: 0.04 });
     }, panel.current);
     return () => ctx.revert();
   }, [active]);
+
+  // Each world shifts the ambient tone (only once sound has been enabled by a gesture).
+  useEffect(() => {
+    if (sound) setStationTone(active);
+  }, [active, sound]);
+
+  const toggleSound = () => {
+    const next = !sound;
+    setSound(next);
+    setSoundEnabled(next); // safe: invoked from a click, so AudioContext may resume
+    if (next) setStationTone(active);
+  };
 
   const goto = (i: number) => {
     const l = (window as Window & { __lenis?: { scrollTo: (y: number, o?: object) => void; limit: number } }).__lenis;
@@ -63,8 +78,14 @@ export function Hud() {
         <p data-rv className="text-[0.62rem] uppercase tracking-[0.34em]" style={{ color: f.palette.accent }}>
           {pad(active + 1)} / {pad(n)} · {f.family}
         </p>
-        <h2 data-nm className="mt-2 overflow-hidden font-display text-[clamp(2.4rem,5vw,4rem)] leading-[0.95]">
-          {f.name}
+        <h2 aria-label={f.name} className="mt-2 font-display text-[clamp(2.4rem,5vw,4rem)] leading-[0.95]">
+          <span className="block overflow-hidden pb-[0.08em]">
+            {f.name.split("").map((ch, i) => (
+              <span key={`${active}-${i}`} data-char aria-hidden className="inline-block" style={{ whiteSpace: "pre" }}>
+                {ch}
+              </span>
+            ))}
+          </span>
         </h2>
         <p data-rv className="mt-2 font-display text-xl italic text-stone-soft">“{f.poem}”</p>
         <div data-rv className="my-4 h-px w-40 bg-[rgba(255,255,255,0.18)]" />
@@ -93,6 +114,21 @@ export function Hud() {
           <button key={fr.id} onClick={() => goto(i)} aria-label={fr.name} className="h-1.5 w-1.5 rounded-full" style={{ background: i === active ? "var(--color-gold)" : "rgba(255,255,255,0.3)" }} />
         ))}
       </div>
+
+      {/* ambient sound toggle (desktop; audio starts on this gesture) */}
+      <button
+        onClick={toggleSound}
+        aria-label={sound ? "Mute ambient sound" : "Enable ambient sound"}
+        className="pointer-events-auto absolute bottom-10 right-10 hidden items-center gap-2.5 md:flex"
+        style={{ color: sound ? "var(--color-gold)" : "rgba(255,255,255,0.5)" }}
+      >
+        <span className={`flex h-3.5 items-end gap-[2px] ${sound ? "animate-pulse" : ""}`}>
+          {[0.5, 0.9, 0.45, 0.75].map((h, i) => (
+            <span key={i} className="w-[2px] bg-current transition-[height] duration-500" style={{ height: `${(sound ? h : 0.28) * 100}%` }} />
+          ))}
+        </span>
+        <span className="text-[0.55rem] uppercase tracking-[0.3em]">{sound ? "Sound" : "Silence"}</span>
+      </button>
 
       {/* scroll cue */}
       {!heroGone && (
