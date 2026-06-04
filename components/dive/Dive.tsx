@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, PerformanceMonitor, Sparkles } from "@react-three/drei";
-import { EffectComposer, Bloom, Vignette, SMAA } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Vignette, SMAA, DepthOfField } from "@react-three/postprocessing";
 import Lenis from "lenis";
 import { FRAGRANCES } from "@/lib/fragrances";
 import { useScene } from "@/lib/store";
@@ -101,11 +101,29 @@ function FollowLight() {
 }
 
 function Effects({ tier }: { tier: QualityTier }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bloom = useRef<any>(null);
+  const base = tier === "high" ? 0.62 : 0.46;
+  // Bloom swells as the camera passes between worlds — a veil of light to fall
+  // through (the cheap, robust cousin of an FBO portal), calm again at each flacon.
+  useFrame(() => {
+    if (!bloom.current) return;
+    const { f } = curFocus();
+    const m = Math.sin(Math.max(0, Math.min(1, f)) * Math.PI);
+    bloom.current.intensity = base + m * 0.5;
+  });
   if (tier === "safe") return null;
   return (
     <EffectComposer multisampling={0} enableNormalPass={false}>
       <SMAA />
-      <Bloom mipmapBlur intensity={tier === "high" ? 0.7 : 0.5} luminanceThreshold={0.6} luminanceSmoothing={0.3} />
+      {/* macro focus-pull: the focal flacon stays crisp (camera holds ~5.6u from it),
+          neighbouring worlds melt to bokeh — the cinematic "deep details" look. */}
+      {tier === "high" ? (
+        <DepthOfField worldFocusDistance={5.6} worldFocusRange={5.5} bokehScale={2.6} />
+      ) : (
+        <></>
+      )}
+      <Bloom ref={bloom} mipmapBlur intensity={base} luminanceThreshold={0.6} luminanceSmoothing={0.3} />
       <Vignette offset={0.3} darkness={0.72} />
     </EffectComposer>
   );
@@ -134,6 +152,8 @@ function WorldAtmosphere({ i, tier }: { i: number; tier: QualityTier }) {
 function Flacon({ i, tier }: { i: number; tier: QualityTier }) {
   const spin = useRef<THREE.Group>(null);
   const bob = useRef<THREE.Group>(null);
+  const key = useRef<THREE.PointLight>(null);
+  const acc = useRef<THREE.PointLight>(null);
   const p = FRAGRANCES[i].palette;
   const phase = i * 1.7;
   useFrame((state, dt) => {
@@ -146,6 +166,12 @@ function Flacon({ i, tier }: { i: number; tier: QualityTier }) {
       const s = bob.current.scale.x + (want - bob.current.scale.x) * (1 - Math.pow(0.05, dt));
       bob.current.scale.setScalar(s);
     }
+    // each world lights up as the camera arrives, and dims behind you → depth
+    const sc = useScene.getState().scroll;
+    const fidx = Math.max(0, Math.min(N - 1, sc * (N - 1)));
+    const flare = Math.max(0, 1 - Math.abs(fidx - i)) ** 2;
+    if (key.current) key.current.intensity = 2.2 + flare * 1.5;
+    if (acc.current) acc.current.intensity = 1.3 + flare * 1.1;
   });
   const pos = flaconPos(i);
   return (
@@ -157,8 +183,8 @@ function Flacon({ i, tier }: { i: number; tier: QualityTier }) {
       </group>
       {/* per-scent colored glow — lights the juice + label from the front,
           kept low so the metal cap catches highlights instead of blooming out */}
-      <pointLight position={[0, 0.35, 1.9]} intensity={3.4} distance={11} decay={2} color={p.light} />
-      <pointLight position={[-1.5, 0.5, 0.7]} intensity={2.2} distance={7} decay={2} color={p.accent} />
+      <pointLight ref={key} position={[0, 0.35, 1.9]} intensity={2.2} distance={11} decay={2} color={p.light} />
+      <pointLight ref={acc} position={[-1.5, 0.5, 0.7]} intensity={1.3} distance={7} decay={2} color={p.accent} />
     </group>
   );
 }
