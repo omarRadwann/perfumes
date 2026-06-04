@@ -1,9 +1,9 @@
 "use client";
 
 import * as THREE from "three";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, PerformanceMonitor, Sparkles } from "@react-three/drei";
+import { AdaptiveDpr, Environment, Lightformer, PerformanceMonitor, Sparkles } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette, SMAA, DepthOfField } from "@react-three/postprocessing";
 import Lenis from "lenis";
 import { FRAGRANCES } from "@/lib/fragrances";
@@ -100,7 +100,7 @@ function FollowLight() {
   );
 }
 
-function Effects({ tier }: { tier: QualityTier }) {
+function Effects({ tier, perf }: { tier: QualityTier; perf: number }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bloom = useRef<any>(null);
   const base = tier === "high" ? 0.62 : 0.46;
@@ -118,7 +118,7 @@ function Effects({ tier }: { tier: QualityTier }) {
       <SMAA />
       {/* macro focus-pull: the focal flacon stays crisp (camera holds ~5.6u from it),
           neighbouring worlds melt to bokeh — the cinematic "deep details" look. */}
-      {tier === "high" ? (
+      {tier === "high" && perf < 1 ? (
         <DepthOfField worldFocusDistance={5.6} worldFocusRange={5.5} bokehScale={2.6} />
       ) : (
         <></>
@@ -160,11 +160,14 @@ function Flacon({ i, tier }: { i: number; tier: QualityTier }) {
     if (spin.current) spin.current.rotation.y += dt * 0.14;
     const t = state.clock.elapsedTime;
     if (bob.current) {
+      const isActive = useScene.getState().active === i;
+      const k = 1 - Math.pow(0.05, dt);
       bob.current.position.y = Math.sin(t * 0.5 + phase) * 0.07;
-      // the focal flacon swells almost imperceptibly — a held breath
-      const want = useScene.getState().active === i ? 1.66 : 1.5;
-      const s = bob.current.scale.x + (want - bob.current.scale.x) * (1 - Math.pow(0.05, dt));
-      bob.current.scale.setScalar(s);
+      // the focal flacon swells almost imperceptibly and leans toward the lens — an arrival beat
+      const want = isActive ? 1.66 : 1.5;
+      bob.current.scale.setScalar(bob.current.scale.x + (want - bob.current.scale.x) * k);
+      const tilt = isActive ? 0.1 : 0;
+      bob.current.rotation.x += (tilt - bob.current.rotation.x) * k;
     }
     // each world lights up as the camera arrives, and dims behind you → depth
     const sc = useScene.getState().scroll;
@@ -218,18 +221,22 @@ function Rig() {
   return null;
 }
 
-function Scene({ tier }: { tier: QualityTier }) {
+function Scene({ tier, perf }: { tier: QualityTier; perf: number }) {
   return (
     <>
       <ambientLight intensity={0.12} />
       <Environment resolution={tier === "high" ? 512 : 256} frames={1}>
         <Lightformer form="rect" intensity={0.8} color="#fff3df" scale={[10, 10, 1]} position={[0, 6, 8]} />
         <Lightformer form="rect" intensity={0.5} color="#9fb4ff" scale={[8, 8, 1]} position={[-8, 2, -6]} rotation={[0, Math.PI / 3, 0]} />
+        {/* tall narrow softbox streaks — the vertical highlight that makes glass + metal
+            read as expensive product photography rather than plain shiny */}
+        <Lightformer form="rect" intensity={2.0} color="#ffffff" scale={[0.5, 6, 1]} position={[2.6, 1.4, 4.2]} />
+        <Lightformer form="rect" intensity={1.1} color="#ffe7c6" scale={[0.35, 5, 1]} position={[-2.8, 1.0, 3.4]} />
       </Environment>
       {FRAGRANCES.map((_, i) => (
         <Flacon key={i} i={i} tier={tier} />
       ))}
-      {tier !== "safe" && FRAGRANCES.map((_, i) => <WorldAtmosphere key={`air-${i}`} i={i} tier={tier} />)}
+      {tier !== "safe" && perf < 2 && FRAGRANCES.map((_, i) => <WorldAtmosphere key={`air-${i}`} i={i} tier={tier} />)}
       <FollowLight />
       <Atmosphere />
       <Rig />
@@ -244,6 +251,8 @@ export function Dive() {
   const tier = useScene((s) => s.tier);
   const forced = useRef<QualityTier | null>(null);
   const integrated = useRef(false);
+  // adaptive quality level: 0 full · 1 drop DoF · 2 drop DoF + thin particles
+  const [perf, setPerf] = useState(0);
 
   useEffect(() => {
     forced.current = readForcedTier();
@@ -272,7 +281,7 @@ export function Dive() {
       <div className="fixed inset-0" style={{ background: "#06060a" }}>
         <Canvas
           frameloop="always"
-          shadows={{ type: THREE.PCFShadowMap }}
+          shadows={false}
           dpr={clampDpr(tier, integrated.current)}
           camera={{ position: [0, 1, 6.5], fov: 44, near: 0.1, far: 200 }}
           gl={{ antialias: true, alpha: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
@@ -285,17 +294,27 @@ export function Dive() {
             }
             gl.toneMappingExposure = 0.95;
             gl.setPixelRatio(clampDpr(useScene.getState().tier, integrated.current));
+            // Transmission renders the whole scene to an offscreen buffer each frame;
+            // half-res keeps the refraction convincing at a fraction of the fill cost.
+            const grm = gl as unknown as { transmissionResolutionScale?: number };
+            const hasTRS = "transmissionResolutionScale" in gl;
+            if (hasTRS) grm.transmissionResolutionScale = tier === "high" ? 0.5 : 0.4;
             scene.background = new THREE.Color("#06060a");
-            console.info(`[Dive] tier=${useScene.getState().tier} gpu=${r || "?"}`);
+            console.info(`[Dive] tier=${useScene.getState().tier} gpu=${r || "?"} transmissionScale=${hasTRS ? grm.transmissionResolutionScale : "UNSUPPORTED"}`);
             setReady(true);
           }}
         >
           <fog attach="fog" args={["#06060a", 8, 30]} />
-          <PerformanceMonitor />
+          <PerformanceMonitor
+            onDecline={() => setPerf((p) => Math.min(2, p + 1))}
+            onIncline={() => setPerf((p) => Math.max(0, p - 1))}
+          >
+            <AdaptiveDpr pixelated={false} />
+          </PerformanceMonitor>
           <Suspense fallback={null}>
-            <Scene tier={tier} />
+            <Scene tier={tier} perf={perf} />
           </Suspense>
-          <Effects tier={tier} />
+          <Effects tier={tier} perf={perf} />
         </Canvas>
       </div>
       <div style={{ height: `${N * 100}vh` }} aria-hidden />
