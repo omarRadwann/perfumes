@@ -1,37 +1,32 @@
-import { Fragment } from "react";
+import DiveMount from "@/components/dive/DiveMount";
 import { FRAGRANCES } from "@/lib/fragrances";
-import { SmoothScroll } from "@/components/editorial/SmoothScroll";
-import { Cursor } from "@/components/editorial/Cursor";
-import { EditorialNav } from "@/components/editorial/EditorialNav";
-import { Hero } from "@/components/editorial/Hero";
-import { Manifesto } from "@/components/editorial/Manifesto";
-import { Collection } from "@/components/editorial/Collection";
-import { ScentFeature } from "@/components/editorial/ScentFeature";
-import { Maison, Interlude } from "@/components/editorial/Maison";
-import { Footer } from "@/components/editorial/Footer";
 
-// Maison Nocté — refined editorial luxury homepage. Big cinematic flacon photography,
-// oversized serif typography, smooth scroll + tasteful scroll-reveal motion.
+// Maison Nocté — "La Descente": a cinematic scroll-driven 3D journey through six
+// nocturnal scent-worlds (reduced-motion / no-WebGL → the editorial fallback).
 export default function Home() {
-  const total = FRAGRANCES.length;
   return (
     <>
-      <SmoothScroll />
-      <Cursor />
-      <EditorialNav />
-      <main>
-        <Hero />
-        <Manifesto />
-        <Collection />
-        {FRAGRANCES.map((f, i) => (
-          <Fragment key={f.id}>
-            <ScentFeature f={f} index={i} total={total} flip={i % 2 === 1} />
-            {i === 2 && <Interlude quote="The hour the sky turns to ink." attribution="Nuit Bleue · Maison Nocté" />}
-          </Fragment>
+      <DiveMount />
+      {/* Crawlable content for SEO + screen readers (the visual experience is client-rendered). */}
+      <div className="sr-only">
+        <h1>Maison Nocté — Parfums de Nuit</h1>
+        <p>Six extrait de parfum compositions for the hours after dark, composed and bottled in Paris.</p>
+        {FRAGRANCES.map((f) => (
+          <section key={f.id}>
+            <h2>{f.name}</h2>
+            <p>
+              {f.family} · {f.concentration} · {f.currency}
+              {f.price} · {f.sizes.join(", ")}
+            </p>
+            <p>{f.poem}</p>
+            <p>{f.story}</p>
+            <p>
+              Top notes: {f.notes.top.join(", ")}. Heart notes: {f.notes.heart.join(", ")}. Base notes:{" "}
+              {f.notes.base.join(", ")}.
+            </p>
+          </section>
         ))}
-        <Maison />
-        <Footer />
-      </main>
+      </div>
     </>
   );
 }

@@ -18,12 +18,15 @@ interface SceneState {
   ready: boolean;
   /** ambient soundscape enabled (after first user gesture) */
   sound: boolean;
+  /** debug overlay visible (?debug=1 or Shift+D) */
+  debug: boolean;
   setScroll: (s: number) => void;
   setHovered: (h: boolean) => void;
   setOpened: (i: number | null) => void;
   setTier: (t: QualityTier) => void;
   setReady: (r: boolean) => void;
   setSound: (s: boolean) => void;
+  setDebug: (d: boolean) => void;
   goto: (i: number) => void;
 }
 
@@ -35,6 +38,7 @@ export const useScene = create<SceneState>((set) => ({
   tier: "standard",
   ready: false,
   sound: false,
+  debug: false,
   setScroll: (s) =>
     set({ scroll: s, active: Math.max(0, Math.min(COUNT - 1, Math.round(s * (COUNT - 1)))) }),
   setHovered: (h) => set({ hovered: h }),
@@ -42,6 +46,7 @@ export const useScene = create<SceneState>((set) => ({
   setTier: (t) => set({ tier: t }),
   setReady: (r) => set({ ready: r }),
   setSound: (s) => set({ sound: s }),
+  setDebug: (d) => set({ debug: d }),
   // Smooth-scroll to a station: handled in the DOM (Lenis); here we just set state.
   goto: (i) => set({ scroll: i / (COUNT - 1), active: i }),
 }));
