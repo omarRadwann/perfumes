@@ -1,12 +1,12 @@
-import DiveMount from "@/components/dive/DiveMount";
+import { FilmExperience } from "@/components/film/FilmExperience";
 import { FRAGRANCES } from "@/lib/fragrances";
 
-// Maison Nocté — "La Descente": a cinematic scroll-driven 3D journey through six
-// nocturnal scent-worlds (reduced-motion / no-WebGL → the editorial fallback).
+// Maison Nocté — "Le Film": a scroll-driven cinematic film of photoreal animated
+// scent-scenes (video + DOM, no WebGL → cannot crash a GPU, runs on any device).
 export default function Home() {
   return (
     <>
-      <DiveMount />
+      <FilmExperience />
       {/* Crawlable content for SEO + screen readers (the visual experience is client-rendered). */}
       <div className="sr-only">
         <h1>Maison Nocté — Parfums de Nuit</h1>
