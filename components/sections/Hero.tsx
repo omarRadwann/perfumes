@@ -12,15 +12,24 @@ export function Hero() {
         <HeroMount />
       </div>
 
-      {/* faint vignette to seat the copy over the canvas */}
+      {/* faint edge vignette to seat the copy over the canvas */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-[1]"
         style={{ background: "radial-gradient(120% 100% at 50% 50%, transparent 40%, rgba(10,10,11,0.55) 100%)" }}
       />
+      {/* soft central lens — lifts overlay-text contrast without hiding the flacon's cap/base */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[2]"
+        style={{ background: "radial-gradient(60% 46% at 50% 53%, rgba(10,10,11,0.62), transparent 72%)" }}
+      />
 
-      {/* overlay copy */}
-      <div className="relative z-10 flex flex-col items-center px-6 text-center">
+      {/* overlay copy — a soft dark halo keeps every line legible over the lit flacon */}
+      <div
+        className="relative z-10 flex flex-col items-center px-6 text-center"
+        style={{ textShadow: "0 2px 44px rgba(10,10,11,0.7), 0 0 3px rgba(10,10,11,0.45)" }}
+      >
         <p className="eyebrow reveal" style={{ animationDelay: "0.15s" }}>
           ÉTHEREAL
         </p>
