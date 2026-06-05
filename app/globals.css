@@ -434,6 +434,33 @@ body.cursor-ring [data-interactive] {
   }
 }
 
+/* ambient audio toggle — equaliser bars */
+.sbar {
+  width: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  height: 5px;
+}
+.sbar-on {
+  animation: sbar 0.9s ease-in-out infinite;
+  animation-delay: var(--sd, 0s);
+}
+@keyframes sbar {
+  0%,
+  100% {
+    height: 4px;
+  }
+  50% {
+    height: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sbar-on {
+    animation: none;
+    height: 9px;
+  }
+}
+
 /* gentle float — drifting testimonial cards / atelier orb */
 .float {
   animation: float var(--ft, 8s) ease-in-out infinite;

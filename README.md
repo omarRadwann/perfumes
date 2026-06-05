@@ -1,46 +1,37 @@
-# Maison Nocté — a fully 3D perfume gallery
+# ÉTHEREAL — *Awaken the Senses*
 
-> *Six compositions, six worlds.*
+> *Scent, made visible.*
 
-A WebGL **maison de parfum** modelled on the reference brief: each fragrance is a
-premium **product** (a glass flacon beside its printed gift carton) shown on a
-marble plinth in its own luminous alcove of a bright, gold-trimmed gallery you
-**scroll** through. Built with **Next.js + React Three Fiber**, shipped fully
-**static** (zero runtime external calls).
+An immersive luxury-perfume site for a niche house of six fragrances. A single long
+scroll — a luminous glass flacon, the collection, a pinned scent-journey, the atelier,
+voices, and a filterable shop — plus a static detail page per scent. Built with
+**Next.js + React Three Fiber**, shipped **fully static** (no runtime external calls).
 
 **Live:** https://omarradwann.github.io/perfumes/
 
-## The reference, implemented
+## The approach — *hybrid 3D*
 
-Based on FHILY's "supermarket product packaging in 3D" build. The five steps:
+Photoreal real-time WebGL is a trap on the open web (and an earlier all-3D build of this
+repo crashed integrated GPUs). So ÉTHEREAL uses **exactly one WebGL surface** — the hero
+flacon — and renders everything else in DOM / CSS / video:
 
-1. **Six individual 3D scenes**, one per product — `components/scene/Alcove.tsx`.
-2. Each scene an **intimate alcove with its own world** — every niche glows in the
-   scent's accent colour and the follow-spot takes its tint.
-3. **Scroll to move between scenes** — Lenis smooth scroll drives a camera dolly
-   that rests framed on the active product (`GalleryCamera.tsx`, `Experience.tsx`).
-4. **Hidden gestures** — double-click a flacon to make it rise & glow; the Konami
-   code reveals the active one.
-5. **A soundscape per scene** — a procedural Web-Audio ambient pad that shifts tone
-   per alcove (`lib/soundscape.ts`), toggled from the nav.
+- **Hero (`components/hero/`)** — a procedural glass flacon (`flacon.glb`, repainted per
+  scent) with drei `MeshTransmissionMaterial`, drifting mist, and tier-gated post-fx. It
+  is **device-tiered and crash-guarded**: `safe` hardware gets an opaque-material bottle
+  (no transmission pass), a lost GPU context falls back to a CSS void, the render loop
+  pauses on tab-blur, and reduced-motion / small phones never start WebGL at all.
+- **Everything else** — the Scent Library, the pinned Journey, Atelier, Voices, Shop, and
+  the `/fragrance/[slug]` detail pages — is DOM/CSS/SVG/video. The detail page's flacon is
+  a tinted **SVG** (`components/ui/SvgFlacon.tsx`), not a second canvas.
 
-Plus GSAP-style product rotation/hover and a bright luxury aesthetic (cream marble,
-champagne gold, soft museum light).
-
-## On the 3D models
-
-The reference modelled packaging in Blender → GLTF. With no Blender and no Tripo
-API key available, the gallery, plinths and products are built **in code** (R3F
-geometry) and wrapped in **AI-generated luxury packaging artwork** (the cartons),
-which nails the "premium product" look with zero external dependencies. An optional
-Tripo image-to-3D pipeline is still included (`scripts/generate-models.js`) per the
-original brief, unused at runtime.
+A unified **accent system** ties it together: choosing a scent in the Library lerps a
+global `--accent` CSS variable *and* the hero bottle's juice colour at once.
 
 ## Tech
 
-Next.js 16 (App Router, TS, static export) · React Three Fiber + drei +
-@react-three/postprocessing · GSAP · Lenis · zustand · Tailwind v4 · Cormorant
-Garamond + Jost. Imagery AI-generated, optimized with sharp.
+Next.js 16 (App Router, TS, `output: "export"`) · React Three Fiber 9 + drei 10 +
+@react-three/postprocessing 3 · GSAP + ScrollTrigger · Lenis · Zustand · Tailwind v4 ·
+Cormorant Garamond + Jost. Imagery is AI-generated and optimised with `sharp`.
 
 ## Run
 
@@ -49,7 +40,13 @@ npm install
 npm run dev            # http://localhost:3000
 ```
 
-## Build & deploy (GitHub Pages, gh-pages branch)
+> Tip: after a production `npm run build`, delete `.next` before `npm run dev` — Turbopack
+> can otherwise serve a stale CSS chunk.
+
+Append `?tier=high|standard|safe` to force a render tier (useful on weak GPUs and for
+headless capture, where the GL string reports a software rasteriser).
+
+## Build & deploy (GitHub Pages, `gh-pages` branch)
 
 ```bash
 GITHUB_PAGES=true npm run build          # → ./out, basePath /perfumes
@@ -58,38 +55,40 @@ cd out && git init -b gh-pages && git add -A && git commit -m deploy \
   && git push -f https://github.com/omarRadwann/perfumes.git HEAD:gh-pages
 ```
 
-Pages → Source: *Deploy from a branch* → `gh-pages` / root. (A ready-made GitHub
-Actions workflow is kept at `docs/deploy.workflow.yml`; using it needs a token with
-the `workflow` scope.)
-
-## Image pipeline
-
-```bash
-node scripts/optimize-images.mjs    # resize + re-encode public/img for the web
-```
-
-`public/img/`: `box-<id>.jpg` (six AI carton artworks), `marble.jpg`, `wall.jpg`,
-`hero.jpg` (boutique still for OG / mobile), `crest.png` (logo), `og.jpg`.
+Pages → Source: *Deploy from a branch* → `gh-pages` / root. Every internal link and raw
+asset URL is prefixed with `withBase()` (`lib/basePath.ts`) so it resolves under the
+`/perfumes` sub-path; `/fragrance/[slug]` is pre-rendered via `generateStaticParams`.
 
 ## Structure
 
 ```
+app/
+  layout.tsx              fonts (on <html> so @theme resolves) + metadata + grain
+  page.tsx                the long-scroll composition + SEO fallback
+  globals.css             the "luminous void" design system (tokens + utilities)
+  fragrance/[slug]/       static detail route (generateStaticParams)
 components/
-  Experience.tsx        Lenis scroll journey, soundscape, hidden gestures, mounts canvas + overlay
-  SceneMount.tsx        ssr:false canvas, or StaticFallback (reduced-motion / small phones)
-  scene/                SceneCanvas, Gallery, Alcove, Product, GalleryCamera, StudioEnvironment
-  ui/                   Nav, SceneOverlay (per-scene info + rail + intro), Cursor, Loader, StaticFallback
-lib/                    fragrances (6 products + palette + packaging), store (scroll/active), soundscape,
-                        deviceTier (GPU tiers), basePath
-scripts/                optimize-images.mjs, serve-out.mjs, generate-models.js (optional Tripo)
+  hero/                   HeroMount · HeroCanvas (the one canvas) · Bottle · Mist ·
+                          HeroLighting · StaticHero (void / fallback)
+  sections/               Hero · Manifesto · ScentLibrary · ScentJourney · Atelier ·
+                          Voices · ShopAll · FragranceDetail
+  layout/                 Nav (scroll-blur + mobile overlay) · Footer (newsletter stub)
+  fx/                     SmoothScroll · Cursor · AccentDriver · AudioToggle · motion
+  ui/                     SvgFlacon · NotesPyramid
+lib/                      fragrances (the six scents) · store · deviceTier · basePath ·
+                          soundscape · motion
+public/                   models/flacon.glb · img/ · video/
 ```
 
-## Performance
+## Performance & assets
 
-Same composition on every device; cost scales by GPU tier (`lib/deviceTier.ts`) —
-real glass transmission + bloom on discrete GPUs, opacity-glass on integrated, a
-reduced-motion / small-phone static fallback. Append `?tier=high|standard|safe`.
+Cost scales by GPU tier (`lib/deviceTier.ts`) — real glass transmission + post-fx on
+discrete GPUs, opacity-glass on integrated, a WebGL-free static hero for reduced-motion /
+small phones. Reused art: `img/nero.jpg` (the atelier's marble), `video/ombre.mp4` (the
+Journey's "Depth", heavily blurred so it reads as abstract amber smoke). **Asset gaps to
+fill** (e.g. via the Higgsfield connector): per-scent shop/OG plates and dedicated
+Journey smoke/petal/haze loops.
 
 ---
 
-© Maison Nocté — Parfums de Nuit. A design/engineering showcase.
+© ÉTHEREAL — a design/engineering showcase.

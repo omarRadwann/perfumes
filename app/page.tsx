@@ -1,6 +1,7 @@
 import { SmoothScroll } from "@/components/fx/SmoothScroll";
 import { Cursor } from "@/components/fx/Cursor";
 import { AccentDriver } from "@/components/fx/AccentDriver";
+import { AudioToggle } from "@/components/fx/AudioToggle";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
@@ -21,6 +22,7 @@ export default function Home() {
       <SmoothScroll />
       <Cursor />
       <AccentDriver />
+      <AudioToggle />
       <Nav />
       <main id="main">
         <Hero />

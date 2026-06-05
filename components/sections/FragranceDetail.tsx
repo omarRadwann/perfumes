@@ -7,6 +7,7 @@ import type { Fragrance } from "@/lib/fragrances";
 import { SmoothScroll } from "@/components/fx/SmoothScroll";
 import { Cursor } from "@/components/fx/Cursor";
 import { AccentDriver } from "@/components/fx/AccentDriver";
+import { AudioToggle } from "@/components/fx/AudioToggle";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
 import { Reveal } from "@/components/fx/motion";
@@ -35,6 +36,7 @@ export function FragranceDetail({ f }: { f: Fragrance }) {
       <SmoothScroll />
       <Cursor />
       <AccentDriver />
+      <AudioToggle />
       <Nav home />
       <main id="main">
         {/* product hero */}
