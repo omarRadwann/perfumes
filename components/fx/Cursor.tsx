@@ -1,20 +1,15 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useScene } from "@/lib/store";
 
-// Fine champagne ring + dot cursor that trails the pointer and swells over the
-// active product. Desktop (fine pointer) only.
+// Champagne ring + dot cursor that trails the pointer and swells over links/buttons.
+// Desktop (fine pointer) only. Decoupled from any store.
 export function Cursor() {
   const dot = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
-  const hovered = useScene((s) => s.hovered);
-
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (typeof window === "undefined" || window.matchMedia("(pointer: coarse)").matches) return;
     document.body.classList.add("cursor-ring");
-
     const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     const rp = { ...pos };
     const onMove = (e: MouseEvent) => {
@@ -22,6 +17,11 @@ export function Cursor() {
       pos.y = e.clientY;
       if (dot.current) dot.current.style.transform = `translate(${e.clientX - 2.5}px, ${e.clientY - 2.5}px)`;
     };
+    const swell = (v: string) => (e: Event) => {
+      if ((e.target as HTMLElement)?.closest?.("a, button, [data-interactive]")) ring.current?.style.setProperty("--s", v);
+    };
+    const over = swell("2.1");
+    const out = swell("1");
     let raf = 0;
     const loop = () => {
       rp.x += (pos.x - rp.x) * 0.2;
@@ -30,18 +30,17 @@ export function Cursor() {
       raf = requestAnimationFrame(loop);
     };
     window.addEventListener("mousemove", onMove, { passive: true });
+    document.addEventListener("mouseover", over);
+    document.addEventListener("mouseout", out);
     raf = requestAnimationFrame(loop);
     return () => {
       window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseover", over);
+      document.removeEventListener("mouseout", out);
       cancelAnimationFrame(raf);
       document.body.classList.remove("cursor-ring");
     };
   }, []);
-
-  useEffect(() => {
-    ring.current?.style.setProperty("--s", hovered ? "2.3" : "1");
-  }, [hovered]);
-
   return (
     <>
       <div ref={dot} className="cursor-dot" aria-hidden />

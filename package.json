@@ -1,8 +1,8 @@
 {
-  "name": "maison-nocte",
+  "name": "ethereal",
   "version": "1.0.0",
   "private": true,
-  "description": "Maison Nocté — a fully 3D luxury perfume experience (Next.js + React Three Fiber).",
+  "description": "ÉTHEREAL — an immersive luxury perfume experience (Next.js + React Three Fiber). Six fragrances, six worlds.",
   "scripts": {
     "dev": "node --max-old-space-size=8192 node_modules/next/dist/bin/next dev",
     "build": "node --max-old-space-size=8192 node_modules/next/dist/bin/next build",

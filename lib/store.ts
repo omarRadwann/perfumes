@@ -2,53 +2,43 @@ import { create } from "zustand";
 import type { QualityTier } from "./deviceTier";
 import { FRAGRANCES } from "./fragrances";
 
-const COUNT = FRAGRANCES.length;
-
 // Shared state across the React-DOM ⇆ R3F-canvas boundary (zustand works in both).
 interface SceneState {
-  /** journey progress 0..1, driven by scroll */
-  scroll: number;
-  /** active alcove index (0..COUNT-1) */
-  active: number;
-  /** pointer is over the active product */
-  hovered: boolean;
-  /** index of a product whose carton is "opened" (hidden gesture), else null */
-  opened: number | null;
   tier: QualityTier;
+  /** the hero canvas (or its static fallback) has signalled first paint */
   ready: boolean;
   /** ambient soundscape enabled (after first user gesture) */
   sound: boolean;
-  /** debug overlay visible (?debug=1 or Shift+D) */
-  debug: boolean;
-  setScroll: (s: number) => void;
-  setHovered: (h: boolean) => void;
-  setOpened: (i: number | null) => void;
+  /** mobile overlay menu open */
+  menuOpen: boolean;
+  /** id of the active scent — the Scent Library selection + the hero bottle */
+  activeScentId: string;
+  /** live, lerped accent hex (mirrors the --accent CSS var + the bottle juice target) */
+  accent: string;
+  /** Add-to-Bag stub counter */
+  bag: number;
   setTier: (t: QualityTier) => void;
   setReady: (r: boolean) => void;
   setSound: (s: boolean) => void;
-  setDebug: (d: boolean) => void;
-  goto: (i: number) => void;
+  setMenuOpen: (o: boolean) => void;
+  setActiveScent: (id: string) => void;
+  setAccent: (hex: string) => void;
+  addToBag: () => void;
 }
 
 export const useScene = create<SceneState>((set) => ({
-  scroll: 0,
-  active: 0,
-  hovered: false,
-  opened: null,
   tier: "standard",
   ready: false,
   sound: false,
-  debug: false,
-  setScroll: (s) =>
-    set({ scroll: s, active: Math.max(0, Math.min(COUNT - 1, Math.round(s * (COUNT - 1)))) }),
-  setHovered: (h) => set({ hovered: h }),
-  setOpened: (i) => set({ opened: i }),
+  menuOpen: false,
+  activeScentId: FRAGRANCES[0].id,
+  accent: FRAGRANCES[0].palette.accent,
+  bag: 0,
   setTier: (t) => set({ tier: t }),
   setReady: (r) => set({ ready: r }),
   setSound: (s) => set({ sound: s }),
-  setDebug: (d) => set({ debug: d }),
-  // Smooth-scroll to a station: handled in the DOM (Lenis); here we just set state.
-  goto: (i) => set({ scroll: i / (COUNT - 1), active: i }),
+  setMenuOpen: (o) => set({ menuOpen: o }),
+  setActiveScent: (id) => set({ activeScentId: id }),
+  setAccent: (hex) => set({ accent: hex }),
+  addToBag: () => set((s) => ({ bag: s.bag + 1 })),
 }));
-
-export const STATION_COUNT = COUNT;

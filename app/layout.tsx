@@ -18,28 +18,32 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://omarradwann.github.io/perfumes/"),
-  title: "Maison Nocté — Parfums de Nuit",
+  title: {
+    default: "ÉTHEREAL — Awaken the Senses",
+    template: "%s — ÉTHEREAL",
+  },
   description:
-    "Maison Nocté — a fully 3D perfumery. Six extrait de parfum compositions, each presented as a premium product in its own luminous alcove of a marble-and-gold gallery you scroll through.",
+    "ÉTHEREAL — a niche house of six fragrances. Scent, made visible: a luminous glass and six jewel-lit worlds you move through.",
   keywords: [
-    "luxury perfume",
+    "ÉTHEREAL",
+    "niche perfume",
+    "luxury fragrance",
+    "eau de parfum",
     "extrait de parfum",
-    "Maison Nocté",
-    "niche fragrance",
-    "oud",
-    "amber",
+    "Noir Solaire",
+    "Fumée Rare",
   ],
-  authors: [{ name: "Maison Nocté" }],
+  authors: [{ name: "ÉTHEREAL" }],
   openGraph: {
-    title: "Maison Nocté — Parfums de Nuit",
-    description: "Five compositions for the hours after dark.",
+    title: "ÉTHEREAL — Awaken the Senses",
+    description: "Scent, made visible. Six fragrances, six worlds.",
     type: "website",
-    images: [{ url: "img/og.jpg", width: 1200, height: 630, alt: "Maison Nocté" }],
+    images: [{ url: "img/og.jpg", width: 1200, height: 630, alt: "ÉTHEREAL" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Maison Nocté — Parfums de Nuit",
-    description: "Five compositions for the hours after dark.",
+    title: "ÉTHEREAL — Awaken the Senses",
+    description: "Scent, made visible.",
     images: ["img/og.jpg"],
   },
 };
@@ -48,13 +52,19 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    // Font CSS vars live on <html> (:root) so Tailwind's @theme --font-display /
+    // --font-sans (which reference them) resolve — next/font on <body> would scope
+    // them below :root and the @theme vars would compute empty.
+    <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
       <head>
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
       </head>
-      <body className={`${cormorant.variable} ${jost.variable} grain`}>
+      <body className="grain">
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
         {children}
       </body>
     </html>

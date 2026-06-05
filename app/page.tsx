@@ -1,16 +1,31 @@
-import { FilmExperience } from "@/components/film/FilmExperience";
+import { SmoothScroll } from "@/components/fx/SmoothScroll";
+import { Cursor } from "@/components/fx/Cursor";
+import { Nav } from "@/components/layout/Nav";
+import { Footer } from "@/components/layout/Footer";
+import { Hero } from "@/components/sections/Hero";
+import { Manifesto } from "@/components/sections/Manifesto";
 import { FRAGRANCES } from "@/lib/fragrances";
 
-// Maison Nocté — "Le Film": a scroll-driven cinematic film of photoreal animated
-// scent-scenes (video + DOM, no WebGL → cannot crash a GPU, runs on any device).
+// ÉTHEREAL — a single long scroll: a luminous hero bottle, then the collection,
+// the journey, the atelier and the shop. Phases 2–5 insert their sections between
+// the Manifesto and the Footer.
 export default function Home() {
   return (
     <>
-      <FilmExperience />
+      <SmoothScroll />
+      <Cursor />
+      <Nav />
+      <main id="main">
+        <Hero />
+        <Manifesto />
+        {/* Phase 2 → #library · Phase 3 → #journey · Phase 4 → #atelier/voices · Phase 5 → #shop */}
+        <Footer />
+      </main>
+
       {/* Crawlable content for SEO + screen readers (the visual experience is client-rendered). */}
       <div className="sr-only">
-        <h1>Maison Nocté — Parfums de Nuit</h1>
-        <p>Six extrait de parfum compositions for the hours after dark, composed and bottled in Paris.</p>
+        <h1>ÉTHEREAL — Awaken the Senses</h1>
+        <p>Scent, made visible. Six fragrances, six worlds — composed in eau de parfum and extrait.</p>
         {FRAGRANCES.map((f) => (
           <section key={f.id}>
             <h2>{f.name}</h2>
