@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
 import { Manifesto } from "@/components/sections/Manifesto";
 import { ScentLibrary } from "@/components/sections/ScentLibrary";
+import { ScentJourney } from "@/components/sections/ScentJourney";
 import { FRAGRANCES } from "@/lib/fragrances";
 
 // ÉTHEREAL — a single long scroll: a luminous hero bottle, then the collection,
@@ -22,7 +23,8 @@ export default function Home() {
         <Hero />
         <Manifesto />
         <ScentLibrary />
-        {/* Phase 3 → #journey · Phase 4 → #atelier/voices · Phase 5 → #shop */}
+        <ScentJourney />
+        {/* Phase 4 → #atelier/voices · Phase 5 → #shop */}
         <Footer />
       </main>
 
