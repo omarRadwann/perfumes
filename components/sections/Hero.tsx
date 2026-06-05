@@ -1,6 +1,7 @@
 "use client";
 
 import { HeroMount } from "@/components/hero/HeroMount";
+import { Kinetic } from "@/components/fx/Kinetic";
 
 // Full-viewport hero. The 3D bottle (or its static fallback) lives in <HeroMount> as
 // the background layer; this DOM copy is overlaid above it.
@@ -33,20 +34,23 @@ export function Hero() {
         <p className="eyebrow reveal" style={{ animationDelay: "0.15s" }}>
           ÉTHEREAL
         </p>
-        <h1
-          className="reveal mt-6 font-display font-light leading-[0.92] tracking-[-0.02em] text-bone"
-          style={{ fontSize: "var(--fs-hero)", animationDelay: "0.3s" }}
-        >
-          Awaken the Senses
-        </h1>
+        <Kinetic
+          as="h1"
+          text="Awaken the Senses"
+          by="char"
+          trigger="load"
+          delay={0.35}
+          className="mt-6 font-display font-light leading-[0.92] tracking-[-0.02em] text-bone"
+          style={{ fontSize: "var(--fs-hero)" }}
+        />
         <p
           className="reveal mt-7 max-w-md font-display text-2xl italic leading-snug text-muted md:text-[1.6rem]"
-          style={{ animationDelay: "0.5s" }}
+          style={{ animationDelay: "0.7s" }}
         >
           Scent, made visible.
         </p>
-        <div className="reveal mt-11" style={{ animationDelay: "0.7s" }}>
-          <a href="#library" className="btn-ghost" data-interactive>
+        <div className="reveal mt-11" style={{ animationDelay: "0.95s" }}>
+          <a href="#library" className="btn-ghost" data-interactive data-magnetic>
             Discover
           </a>
         </div>

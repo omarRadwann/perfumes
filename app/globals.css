@@ -228,10 +228,40 @@ h3,
   scale: var(--s, 1);
   transition: scale 0.35s var(--ease-silk);
 }
+/* trailing "candlelight" halo — soft accent glow that lags behind the pointer */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 70;
+  opacity: 0.7;
+  will-change: transform;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%);
+}
 @media (pointer: coarse) {
   .cursor-dot,
-  .cursor-ring-el {
+  .cursor-ring-el,
+  .cursor-glow {
     display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cursor-glow {
+    display: none;
+  }
+}
+/* magnetic targets — soft trailing pull toward the pointer */
+[data-magnetic] {
+  transition: transform 0.5s var(--ease-silk);
+}
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  [data-magnetic] {
+    transition: none;
   }
 }
 body.cursor-ring,
@@ -458,6 +488,38 @@ body.cursor-ring [data-interactive] {
   .sbar-on {
     animation: none;
     height: 9px;
+  }
+}
+
+/* kinetic headline — masked pieces rise on reveal (CSS-driven, .kin-go triggers it) */
+.kin-mask {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+  vertical-align: baseline;
+}
+.kin-piece {
+  display: inline-block;
+  transform: translateY(118%);
+  will-change: transform;
+}
+.kin-go .kin-piece {
+  animation: kin-rise var(--kd, 0.9s) cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * var(--ks, 0.06s) + var(--kdelay, 0s));
+}
+@keyframes kin-rise {
+  from {
+    transform: translateY(118%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kin-piece {
+    transform: none;
+    animation: none !important;
   }
 }
 

@@ -54,6 +54,7 @@ export function Bottle({ tier }: { tier: QualityTier }) {
   const activeId = useScene((s) => s.activeScentId);
   const f = useMemo(() => getFragrance(activeId) ?? FRAGRANCES[0], [activeId]);
 
+  const outer = useRef<THREE.Group>(null);
   const tilt = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
   const juiceMat = useRef<THREE.MeshStandardMaterial>(null);
@@ -84,10 +85,22 @@ export function Bottle({ tier }: { tier: QualityTier }) {
     if (collarMat.current) collarMat.current.color.copy(capColor.current);
     if (capMat.current) capMat.current.color.copy(capColor.current);
 
-    // slow stately spin + a barely-there bob
+    // scroll progress across the first viewport (0 at top → 1 a screen down)
+    const sp =
+      typeof window !== "undefined"
+        ? Math.min(1, Math.max(0, window.scrollY / (window.innerHeight || 1)))
+        : 0;
+
+    // slow stately spin + a barely-there bob — winds up + recedes as you scroll
     if (spin.current) {
-      spin.current.rotation.y += dt * 0.16;
-      spin.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.03;
+      spin.current.rotation.y += dt * (0.16 + sp * 2.4);
+      spin.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.03 - sp * 0.5;
+    }
+    // ease the whole flacon back + down as the hero hands off to the page below
+    if (outer.current) {
+      const targetScale = SCALE * (1 - sp * 0.18);
+      outer.current.scale.setScalar(outer.current.scale.x + (targetScale - outer.current.scale.x) * k);
+      outer.current.rotation.z = -sp * 0.12;
     }
     // subtle tilt toward the cursor (≈8° max) — the bottle "looks" at the pointer
     if (tilt.current) {
@@ -99,7 +112,7 @@ export function Bottle({ tier }: { tier: QualityTier }) {
   });
 
   return (
-    <group scale={SCALE} position={[0, OFFSET_Y, 0]}>
+    <group ref={outer} scale={SCALE} position={[0, OFFSET_Y, 0]}>
       <group ref={tilt}>
         <group ref={spin}>
           {/* juice — coloured + faintly luminous so each scent reads as itself */}

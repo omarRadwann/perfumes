@@ -11,6 +11,7 @@ import { AudioToggle } from "@/components/fx/AudioToggle";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
 import { Reveal } from "@/components/fx/motion";
+import { Kinetic } from "@/components/fx/Kinetic";
 import { NotesPyramid } from "@/components/ui/NotesPyramid";
 import { SvgFlacon } from "@/components/ui/SvgFlacon";
 
@@ -64,9 +65,15 @@ export function FragranceDetail({ f }: { f: Fragrance }) {
               <p className="eyebrow mt-6" style={{ color: "var(--accent)" }}>
                 {f.family}
               </p>
-              <h1 className="mt-4 font-display font-light leading-[0.92] text-bone" style={{ fontSize: "var(--fs-hero)" }}>
-                {f.name}
-              </h1>
+              <Kinetic
+                as="h1"
+                by="char"
+                trigger="load"
+                delay={0.1}
+                text={f.name}
+                className="mt-4 font-display font-light leading-[0.92] text-bone"
+                style={{ fontSize: "var(--fs-hero)" }}
+              />
               <p className="mt-5 font-display text-2xl italic text-muted md:text-[1.7rem]">{f.poem}</p>
               <p className="mt-3 text-[0.7rem] uppercase tracking-[0.3em] text-muted">
                 {f.character} · {f.concentration}
@@ -96,7 +103,7 @@ export function FragranceDetail({ f }: { f: Fragrance }) {
                 </div>
               </div>
 
-              <button onClick={onAdd} className="btn-gold mt-8" data-interactive>
+              <button onClick={onAdd} className="btn-gold mt-8" data-interactive data-magnetic>
                 {added ? "Added to Bag ✓" : `Add to Bag — ${size}`}
               </button>
             </div>

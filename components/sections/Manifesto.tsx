@@ -1,6 +1,7 @@
 "use client";
 
 import { Reveal } from "@/components/fx/motion";
+import { Kinetic } from "@/components/fx/Kinetic";
 
 // One large pull-quote on near-black + hairline. The calm after the hero.
 export function Manifesto() {
@@ -11,18 +12,21 @@ export function Manifesto() {
           <p className="eyebrow">The House</p>
           <div className="hairline mt-5 max-w-[8rem]" />
         </Reveal>
-        <Reveal stagger={0.06}>
-          <p
+        <div>
+          <Kinetic
+            as="p"
+            by="word"
+            text="ÉTHEREAL is a study of the invisible — scent composed as light, and worn like a second skin."
             className="font-display font-light leading-[1.1] tracking-[-0.01em] text-bone"
             style={{ fontSize: "clamp(1.9rem, 4.2vw, 3.6rem)" }}
-          >
-            ÉTHEREAL is a study of the invisible — scent composed as light, and worn like a second skin.
-          </p>
-          <p className="mt-8 max-w-2xl leading-relaxed text-muted" style={{ fontSize: "var(--fs-body)" }}>
-            Each fragrance is built like a small architecture: rare materials drawn down to a single, lingering
-            line. Six compositions, six worlds — made in small batches, finished by hand, and never said out loud.
-          </p>
-        </Reveal>
+          />
+          <Reveal className="mt-8">
+            <p className="max-w-2xl leading-relaxed text-muted" style={{ fontSize: "var(--fs-body)" }}>
+              Each fragrance is built like a small architecture: rare materials drawn down to a single, lingering
+              line. Six compositions, six worlds — made in small batches, finished by hand, and never said out loud.
+            </p>
+          </Reveal>
+        </div>
       </div>
     </section>
   );

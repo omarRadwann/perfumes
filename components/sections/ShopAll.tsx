@@ -5,6 +5,7 @@ import Link from "next/link";
 import { withBase } from "@/lib/basePath";
 import { FRAGRANCES } from "@/lib/fragrances";
 import { Reveal } from "@/components/fx/motion";
+import { Kinetic } from "@/components/fx/Kinetic";
 import { SvgFlacon } from "@/components/ui/SvgFlacon";
 
 const SEASONS = ["Spring", "Summer", "Autumn", "Winter"];
@@ -82,9 +83,13 @@ export function ShopAll() {
         <Reveal>
           <p className="eyebrow">Shop All</p>
           <div className="hairline mt-5 max-w-[8rem]" />
-          <h2 className="mt-8 font-display font-light leading-[1.0] text-bone" style={{ fontSize: "var(--fs-h2)" }}>
-            The complete collection.
-          </h2>
+          <Kinetic
+            as="h2"
+            by="word"
+            text="The complete collection."
+            className="mt-8 font-display font-light leading-[1.0] text-bone"
+            style={{ fontSize: "var(--fs-h2)" }}
+          />
         </Reveal>
 
         {/* filters */}
