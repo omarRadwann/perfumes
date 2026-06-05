@@ -434,6 +434,26 @@ body.cursor-ring [data-interactive] {
   }
 }
 
+/* gentle float — drifting testimonial cards / atelier orb */
+.float {
+  animation: float var(--ft, 8s) ease-in-out infinite;
+  animation-delay: var(--fd, 0s);
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .float {
+    animation: none;
+  }
+}
+
 /* drifting accent motes — the "family particle" motif, re-tinted via --accent */
 .mote {
   position: absolute;
