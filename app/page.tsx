@@ -1,9 +1,11 @@
 import { SmoothScroll } from "@/components/fx/SmoothScroll";
 import { Cursor } from "@/components/fx/Cursor";
+import { AccentDriver } from "@/components/fx/AccentDriver";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
 import { Manifesto } from "@/components/sections/Manifesto";
+import { ScentLibrary } from "@/components/sections/ScentLibrary";
 import { FRAGRANCES } from "@/lib/fragrances";
 
 // ÉTHEREAL — a single long scroll: a luminous hero bottle, then the collection,
@@ -14,11 +16,13 @@ export default function Home() {
     <>
       <SmoothScroll />
       <Cursor />
+      <AccentDriver />
       <Nav />
       <main id="main">
         <Hero />
         <Manifesto />
-        {/* Phase 2 → #library · Phase 3 → #journey · Phase 4 → #atelier/voices · Phase 5 → #shop */}
+        <ScentLibrary />
+        {/* Phase 3 → #journey · Phase 4 → #atelier/voices · Phase 5 → #shop */}
         <Footer />
       </main>
 

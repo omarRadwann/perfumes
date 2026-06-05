@@ -434,6 +434,33 @@ body.cursor-ring [data-interactive] {
   }
 }
 
+/* drifting accent motes — the "family particle" motif, re-tinted via --accent */
+.mote {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: mote var(--md, 7s) ease-in-out infinite;
+  animation-delay: var(--mdelay, 0s);
+}
+@keyframes mote {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(7px, -20px);
+    opacity: 0.18;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mote {
+    animation: none;
+  }
+}
+
 .kenburns {
   animation: kenburns 22s ease-in-out infinite alternate;
   transform-origin: center;
