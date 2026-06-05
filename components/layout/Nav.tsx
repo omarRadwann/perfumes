@@ -2,19 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useScene } from "@/lib/store";
+import { withBase } from "@/lib/basePath";
 
-const LINKS = [
-  { href: "#library", label: "Library" },
-  { href: "#journey", label: "Journey" },
-  { href: "#atelier", label: "Atelier" },
-  { href: "#shop", label: "Shop" },
+const ANCHORS = [
+  { id: "library", label: "Library" },
+  { id: "journey", label: "Journey" },
+  { id: "atelier", label: "Atelier" },
+  { id: "shop", label: "Shop" },
 ];
 
-export function Nav() {
+// `home` = link out to the home page's anchors (used on the /fragrance/[slug] route);
+// otherwise in-page anchors for the long-scroll home.
+export function Nav({ home = false }: { home?: boolean }) {
   const [solid, setSolid] = useState(false);
   const menuOpen = useScene((s) => s.menuOpen);
   const setMenuOpen = useScene((s) => s.setMenuOpen);
   const bag = useScene((s) => s.bag);
+
+  const hrefFor = (id: string) => (home ? `${withBase("/")}#${id}` : `#${id}`);
+  const homeHref = home ? withBase("/") : "#top";
+  const LINKS = ANCHORS.map((a) => ({ href: hrefFor(a.id), label: a.label }));
 
   useEffect(() => {
     const onScroll = () => setSolid(window.scrollY > 80);
@@ -44,7 +51,7 @@ export function Nav() {
       >
         <nav className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-5 md:px-12">
           <a
-            href="#top"
+            href={homeHref}
             className="font-display text-[1.5rem] leading-none tracking-[0.14em] text-bone md:text-[1.75rem]"
           >
             ÉTHEREAL
@@ -56,7 +63,7 @@ export function Nav() {
                 {l.label}
               </a>
             ))}
-            <a href="#shop" className="nav-link" aria-label={`Bag, ${bag} ${bag === 1 ? "item" : "items"}`}>
+            <a href={hrefFor("shop")} className="nav-link" aria-label={`Bag, ${bag} ${bag === 1 ? "item" : "items"}`}>
               Bag ({bag})
             </a>
           </div>
@@ -97,7 +104,7 @@ export function Nav() {
           </a>
         ))}
         <a
-          href="#shop"
+          href={hrefFor("shop")}
           onClick={() => setMenuOpen(false)}
           className="eyebrow mt-3 transition-all duration-500"
           style={{ opacity: menuOpen ? 1 : 0, transitionDelay: menuOpen ? "440ms" : "0ms" }}
